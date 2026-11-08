@@ -9,3 +9,4 @@ config/permissions.json
 *.log
 .DS_Store
 Thumbs.db
+Local-Workspace-MCP.code-workspace

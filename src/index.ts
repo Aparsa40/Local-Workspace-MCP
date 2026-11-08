@@ -4,8 +4,8 @@ import { createServer } from "./server/create-server.js";
 
 async function main(): Promise<void> {
   const config = await loadConfig();
+  process.stderr.write("Local-Workspace-MCP starting over stdio.\n");
   await serveStdio(() => createServer(config));
-  process.stderr.write("Local-Workspace-MCP started over stdio.\n");
 }
 
 main().catch((error: unknown) => {

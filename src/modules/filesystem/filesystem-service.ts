@@ -1,4 +1,4 @@
-import { open, readdir, stat } from "node:fs/promises";
+import { open, opendir, stat } from "node:fs/promises";
 import path from "node:path";
 import type { AppConfig, Capability } from "../../config/config-schema.js";
 import { PermissionEngine } from "../../security/permission-engine.js";
@@ -40,10 +40,10 @@ export class FilesystemService {
 
   async listFiles(relativePath: string): Promise<Array<{ name: string; type: "file" | "directory" | "other" }>> {
     const { target, root } = await this.resolve(relativePath, "list");
-    const entries = await readdir(target, { withFileTypes: true });
     const visible: Array<{ name: string; type: "file" | "directory" | "other" }> = [];
+    const directory = await opendir(target);
 
-    for (const entry of entries) {
+    for await (const entry of directory) {
       if (visible.length >= this.config.limits.maxListEntries) break;
       if (entry.isSymbolicLink()) continue;
       const absolute = path.join(target, entry.name);
@@ -64,7 +64,23 @@ export class FilesystemService {
       const details = await handle.stat();
       if (!details.isFile()) throw new Error("Requested resource is not a regular file.");
       if (details.size > this.config.limits.maxFileBytes) throw new Error("File exceeds the configured size limit.");
-      return await handle.readFile({ encoding: "utf8" });
+
+      const chunks: Buffer[] = [];
+      let totalBytes = 0;
+      const maxBytes = this.config.limits.maxFileBytes;
+
+      // Enforce the limit while reading too, in case the file grows after stat().
+      while (true) {
+        const remaining = maxBytes + 1 - totalBytes;
+        const buffer = Buffer.alloc(Math.min(64 * 1024, remaining));
+        const { bytesRead } = await handle.read(buffer, 0, buffer.length, null);
+        if (bytesRead === 0) break;
+        totalBytes += bytesRead;
+        if (totalBytes > maxBytes) throw new Error("File exceeds the configured size limit.");
+        chunks.push(buffer.subarray(0, bytesRead));
+      }
+
+      return Buffer.concat(chunks, totalBytes).toString("utf8");
     } finally {
       await handle.close();
     }
@@ -86,13 +102,14 @@ export class FilesystemService {
     const { target, root } = await this.resolve(relativePath, "search");
     const results: string[] = [];
 
-    const walk = async (directory: string, depth: number): Promise<void> => {
+    const walk = async (directoryPath: string, depth: number): Promise<void> => {
       if (depth > this.config.limits.maxSearchDepth || results.length >= this.config.limits.maxSearchResults) return;
-      const entries = await readdir(directory, { withFileTypes: true });
-      for (const entry of entries) {
+      const directory = await opendir(directoryPath);
+
+      for await (const entry of directory) {
         if (results.length >= this.config.limits.maxSearchResults) break;
         if (entry.isSymbolicLink()) continue;
-        const absolute = path.join(directory, entry.name);
+        const absolute = path.join(directoryPath, entry.name);
         if (!(await this.isChildAllowed(root, absolute, "search"))) continue;
 
         if (entry.isDirectory()) {

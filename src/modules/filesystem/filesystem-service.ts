@@ -26,13 +26,35 @@ export class FilesystemService {
     throw new Error("Requested resource is unavailable or not authorized.");
   }
 
+  private async isChildAllowed(root: string, absolutePath: string, capability: Capability): Promise<boolean> {
+    try {
+      const relative = path.relative(root, absolutePath);
+      const canonical = await resolveExistingPath(root, relative);
+      this.policy.authorize(canonical, capability);
+      return true;
+    } catch {
+      // Do not disclose entries belonging to a more-restricted root or outside the workspace.
+      return false;
+    }
+  }
+
   async listFiles(relativePath: string): Promise<Array<{ name: string; type: "file" | "directory" | "other" }>> {
-    const { target } = await this.resolve(relativePath, "list");
+    const { target, root } = await this.resolve(relativePath, "list");
     const entries = await readdir(target, { withFileTypes: true });
-    return entries.slice(0, this.config.limits.maxListEntries).map((entry) => ({
-      name: entry.name,
-      type: entry.isFile() ? "file" : entry.isDirectory() ? "directory" : "other"
-    }));
+    const visible: Array<{ name: string; type: "file" | "directory" | "other" }> = [];
+
+    for (const entry of entries) {
+      if (visible.length >= this.config.limits.maxListEntries) break;
+      if (entry.isSymbolicLink()) continue;
+      const absolute = path.join(target, entry.name);
+      if (!(await this.isChildAllowed(root, absolute, "list"))) continue;
+      visible.push({
+        name: entry.name,
+        type: entry.isFile() ? "file" : entry.isDirectory() ? "directory" : "other"
+      });
+    }
+
+    return visible;
   }
 
   async readTextFile(relativePath: string): Promise<string> {
@@ -71,6 +93,8 @@ export class FilesystemService {
         if (results.length >= this.config.limits.maxSearchResults) break;
         if (entry.isSymbolicLink()) continue;
         const absolute = path.join(directory, entry.name);
+        if (!(await this.isChildAllowed(root, absolute, "search"))) continue;
+
         if (entry.isDirectory()) {
           await walk(absolute, depth + 1);
         } else if (entry.isFile() && entry.name.toLocaleLowerCase().includes(query.toLocaleLowerCase())) {

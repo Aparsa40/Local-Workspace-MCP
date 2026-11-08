@@ -64,7 +64,7 @@ npm run build
 npm audit --audit-level=high
 ```
 
-CI runs typecheck, lint, tests, build, and dependency audit. Dependency Review runs on pull requests; CodeQL runs on pushes, pull requests, and a weekly schedule.
+CI runs typecheck, lint, tests, build, and dependency audit. Dependency Review runs on pull requests; CodeQL runs on pushes, pull requests, and a weekly schedule. The first CI run will validate the initial dependency graph; a committed lockfile should be added after the first local install.
 
 ## Security notes
 

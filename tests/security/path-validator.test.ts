@@ -64,3 +64,14 @@ test("blocks common credential filenames", async () => {
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("blocks dotenv variants and Windows alternate data streams", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "lwmcp-root-"));
+  try {
+    await assert.rejects(resolveExistingPath(root, ".env.development"), /sensitive/i);
+    await assert.rejects(resolveExistingPath(root, "notes.txt:secret"), /alternate-stream/i);
+    await assert.rejects(resolveExistingPath(root, "CON.txt"), /reserved/i);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

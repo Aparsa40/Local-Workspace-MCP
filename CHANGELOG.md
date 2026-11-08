@@ -7,16 +7,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 ### Added
-- Initial project documentation baseline.
-- Project goals, scope, and planned filesystem tool inventory.
-- Initial architecture and security design direction.
-- Contribution, security reporting, licensing, and versioning policies.
+- Initial Node.js and TypeScript project foundation.
+- MCP stdio server using the official TypeScript server SDK.
+- Read-only filesystem tools: `list_files`, `read_file`, `get_file_info`, and `search_files`.
+- Explicit workspace-root configuration and capability-based permission evaluation.
+- Canonical path checks, symlink/junction escape checks, sensitive-file deny rules, and bounded output.
+- Security audit events written to stderr.
+- Unit tests for path confinement and permission precedence.
+- GitHub Actions checks for typecheck, lint, Linux and Windows tests, build, npm audit, CodeQL, and Dependency Review.
+- Dependabot configuration for npm and GitHub Actions.
 
-### Not yet implemented
-- MCP server and transport.
-- Configuration loader and permission engine.
-- Filesystem tools.
-- Audit logging and automated tests.
+### Security
+- Filesystem mutation tools, network transports, Git, terminal, and PowerShell are intentionally not enabled in this foundation.
+- All filesystem tool paths must be relative to configured roots.
 
 ## [0.1.0] - Unreleased
 

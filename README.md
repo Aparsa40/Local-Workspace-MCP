@@ -2,117 +2,80 @@
 
 A local, policy-controlled MCP server that gives AI assistants and agents explicitly authorized access to selected files and developer resources on a Windows workstation.
 
-> **Project status:** Documentation and architecture baseline. The filesystem implementation is not yet complete. Tool names and capabilities described as planned are design targets, not claims of currently available functionality.
+> **Status:** Early foundation implementation. The initial server exposes read-only filesystem tools. Write, delete, Git, terminal, and PowerShell capabilities are not enabled yet.
 
-## Goals
+## Features in this foundation
 
-- Expose selected local workspace capabilities through the Model Context Protocol (MCP).
-- Start with filesystem operations over a local `stdio` connection.
-- Enforce access through explicit, per-root permissions and a centralized policy engine.
-- Keep filesystem, security, audit, and transport concerns separate.
-- Make future Git, terminal, PowerShell, and developer-tool integrations possible without granting them implicit access.
-- Run with the minimum privileges required; administrator access is not a design requirement.
+- MCP over local **stdio**; no network listener.
+- Explicit workspace roots and capability-based authorization.
+- Read-only tools: `list_files`, `read_file`, `get_file_info`, and `search_files`.
+- Canonical path validation and symlink/reparse-point escape checks.
+- Bounded file size, search depth, and result count.
+- Audit events written to stderr so stdout remains reserved for MCP JSON-RPC.
+- CI checks for type safety, lint, tests, build, dependency audit, and CodeQL.
 
-## Non-goals
+## Requirements
 
-- Providing unrestricted access to the host computer.
-- Exposing a network listener by default.
-- Acting as a general-purpose remote administration service.
-- Treating an MCP client, model, or agent as trusted merely because it is connected.
+- Node.js 22 or later
+- npm 10 or later
 
-## Planned capabilities
+## Local setup
 
-The initial filesystem tool set is expected to include:
-
-| Tool | Intended purpose |
-|---|---|
-| `list_files` | List entries within an authorized directory |
-| `read_file` | Read an authorized file |
-| `search_files` | Search authorized workspace content |
-| `write_file` | Create or update an authorized file |
-| `create_directory` | Create a directory within an authorized root |
-| `move_file` | Move or rename an authorized filesystem entry |
-| `delete_file` | Delete an authorized entry, subject to explicit safeguards |
-| `get_file_info` | Return metadata for an authorized entry |
-| `get_workspace_tree` | Return a bounded directory tree |
-
-These tools must not be considered available until implemented, tested, and documented in the release notes.
-
-## Architecture at a glance
-
-The intended request path is:
-
-1. An MCP client connects to the local server.
-2. The server validates the request and resolves the requested operation.
-3. The permission engine evaluates the operation against configured roots and policy.
-4. Path validation checks canonical paths and relevant Windows filesystem edge cases.
-5. The filesystem service performs the operation only after authorization.
-6. Security-relevant outcomes are recorded by the audit subsystem.
-
-See [architecture.md](architecture.md) for the detailed design and security boundaries.
-
-## Planned technology
-
-- **Runtime:** Node.js
-- **Language:** TypeScript
-- **Protocol:** Model Context Protocol
-- **Initial transport:** `stdio`
-- **Target platform:** Windows, with platform-specific behavior isolated where practical
-- **Tests:** Automated unit and security-focused tests
-
-Exact package versions and commands will be added when the implementation baseline is selected.
-
-## Security model
-
-Access is denied unless a configured policy explicitly allows the requested operation. Permissions are scoped to configured filesystem roots and individual operations. Future modules such as Git and PowerShell must have separate capabilities and policies.
-
-Sensitive files (for example, credentials, private keys, and environment files) should be denied by default or protected by explicit policy. Destructive operations require additional safeguards. The server should not run elevated.
-
-Read [SECURITY.md](SECURITY.md) before deploying or reporting a vulnerability.
-
-## Project status and roadmap
-
-1. Establish documentation, repository conventions, and architecture.
-2. Implement configuration loading and schema validation.
-3. Implement path canonicalization and the permission engine.
-4. Implement read-only filesystem tools.
-5. Add write operations with safeguards and audit logging.
-6. Add security tests and client integration guidance.
-7. Evaluate optional transports and independently permissioned developer modules.
-
-The roadmap is directional and may change as implementation and testing reveal additional requirements.
-
-## Configuration
-
-A sample policy will be provided under `config/` when the configuration schema is implemented. Do not assume that an example policy is enforced until the running server has loaded and validated it.
-
-A future configuration may resemble the following conceptual example:
-
-```json
-{
-  "roots": [
-    {
-      "path": "F:\\All-Projects-v3",
-      "permissions": ["list", "read"]
-    },
-    {
-      "path": "F:\\All-Projects-v3\\ParsSynapse-Chat",
-      "permissions": ["list", "read", "write", "create", "rename"]
-    }
-  ]
-}
+```powershell
+npm install
+Copy-Item config/permissions.example.json config/permissions.json
 ```
 
-This is illustrative only. The final schema, precedence rules for nested roots, and supported permission names must be defined and tested before use.
+Edit `config/permissions.json` and replace the sample root with a real, existing absolute directory. Grant only the capabilities you need. The initial implementation supports `list`, `read`, `search`, and `metadata`.
 
-## Development
+Start the server:
 
-Contribution expectations are described in [CONTRIBUTING.md](CONTRIBUTING.md). The implementation's actual install, build, lint, and test commands will be documented here once `package.json` and the corresponding scripts exist.
+```powershell
+npm run dev
+```
 
-## Versioning
+The process waits for an MCP client over stdin/stdout. Do not type ordinary commands into the server terminal while it is running.
 
-The project intends to follow Semantic Versioning. See [VERSIONING.md](VERSIONING.md).
+For a non-default configuration path:
+
+```powershell
+$env:LWMCP_CONFIG = "F:\\AI-Config\\local-workspace-mcp.json"
+npm run dev
+```
+
+## MCP tools
+
+| Tool | Description |
+|---|---|
+| `list_files` | List direct entries in an authorized directory |
+| `read_file` | Read a bounded UTF-8 text file |
+| `get_file_info` | Read limited file/directory metadata |
+| `search_files` | Search file names with bounded traversal |
+
+Tool paths must be relative to a configured root. Absolute paths and traversal segments are rejected. The most specific matching configured root controls permissions for nested roots.
+
+## Checks
+
+```powershell
+npm run typecheck
+npm run lint
+npm test
+npm run build
+npm audit --audit-level=high
+```
+
+CI runs typecheck, lint, tests, build, and dependency audit. Dependency Review runs on pull requests; CodeQL runs on pushes, pull requests, and a weekly schedule. The first CI run will validate the initial dependency graph; a committed lockfile should be added after the first local install.
+
+## Security notes
+
+- Run as the current user; do not use Administrator.
+- Keep `config/permissions.json` private; it is ignored by Git.
+- Do not configure broad roots such as an entire drive or user profile.
+- Do not expose the server through a network transport.
+- This initial implementation is read-only. Future write-capable modules require separate capabilities, tests, and review.
+
+See [SECURITY.md](SECURITY.md) and [architecture.md](architecture.md).
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).

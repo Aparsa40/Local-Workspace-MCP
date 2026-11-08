@@ -1,0 +1,14 @@
+{
+  "roots": [
+    {
+      "path": "F:\\All-Projects-v3\\Example-Project",
+      "permissions": ["list", "read", "search", "metadata"]
+    }
+  ],
+  "limits": {
+    "maxFileBytes": 1048576,
+    "maxListEntries": 500,
+    "maxSearchResults": 100,
+    "maxSearchDepth": 5
+  }
+}

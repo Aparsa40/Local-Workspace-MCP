@@ -1,11 +1,12 @@
 node_modules/
 dist/
 coverage/
+logs/
+config/permissions.json
 .env
 .env.*
 !.env.example
 *.log
 .DS_Store
 Thumbs.db
-.vscode/
 Local-Workspace-MCP.code-workspace

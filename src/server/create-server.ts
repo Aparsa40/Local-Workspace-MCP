@@ -12,7 +12,7 @@ export async function createServer(config: AppConfig): Promise<McpServer> {
 
   server.registerTool("list_files", {
     description: "List entries in a directory relative to an explicitly authorized workspace root.",
-    inputSchema: { path: z.string().default("") }
+    inputSchema: z.object({ path: z.string().default("") })
   }, async ({ path: relativePath }) => {
     try {
       const entries = await filesystem.listFiles(relativePath);
@@ -26,7 +26,7 @@ export async function createServer(config: AppConfig): Promise<McpServer> {
 
   server.registerTool("read_file", {
     description: "Read a UTF-8 text file from an explicitly authorized workspace root. File size is bounded by policy.",
-    inputSchema: { path: z.string().min(1) }
+    inputSchema: z.object({ path: z.string().min(1) })
   }, async ({ path: relativePath }) => {
     try {
       const content = await filesystem.readTextFile(relativePath);
@@ -54,7 +54,7 @@ export async function createServer(config: AppConfig): Promise<McpServer> {
 
   server.registerTool("search_files", {
     description: "Find file names matching a query inside an authorized directory. Traversal depth and result count are bounded.",
-    inputSchema: { path: z.string().default(""), query: z.string().min(1).max(200) }
+    inputSchema: z.object({ path: z.string().default(""), query: z.string().min(1).max(200) })
   }, async ({ path: relativePath, query }) => {
     try {
       const matches = await filesystem.searchFiles(relativePath, query);

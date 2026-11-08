@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type { AppConfig } from "../../src/config/config-schema.js";
@@ -47,7 +47,7 @@ test("does not reveal nested roots that deny list or search capabilities", async
   const root = await mkdtemp(path.join(os.tmpdir(), "lwmcp-parent-"));
   const privateRoot = path.join(root, "private");
   try {
-    await (await import("node:fs/promises")).mkdir(privateRoot);
+    await mkdir(privateRoot);
     await writeFile(path.join(root, "public.txt"), "public");
     await writeFile(path.join(privateRoot, "secret.txt"), "private");
     const config = {

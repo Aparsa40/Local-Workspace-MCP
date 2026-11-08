@@ -9,6 +9,7 @@ export const appConfigSchema = z.object({
   }).strict()).min(1),
   limits: z.object({
     maxFileBytes: z.number().int().positive().max(10_485_760).default(1_048_576),
+    maxListEntries: z.number().int().positive().max(2_000).default(500),
     maxSearchResults: z.number().int().positive().max(500).default(100),
     maxSearchDepth: z.number().int().min(0).max(10).default(5)
   }).default({})

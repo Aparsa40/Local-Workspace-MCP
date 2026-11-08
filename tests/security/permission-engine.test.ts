@@ -16,7 +16,7 @@ test("grants only explicitly configured capabilities", async () => {
     const engine = await PermissionEngine.create(config);
     const canonicalRoot = await realpath(root);
     assert.equal(engine.authorize(canonicalRoot, "read").path, canonicalRoot);
-    assert.throws(() => engine.authorize(root, "search"), /denied/i);
+    assert.throws(() => engine.authorize(canonicalRoot, "search"), /denied/i);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

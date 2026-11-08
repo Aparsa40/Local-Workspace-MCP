@@ -11,7 +11,7 @@ test("grants only explicitly configured capabilities", async () => {
   try {
     const config = {
       roots: [{ path: root, permissions: ["list", "read"] }],
-      limits: { maxFileBytes: 1024, maxSearchResults: 10, maxSearchDepth: 2 }
+      limits: { maxFileBytes: 1024, maxListEntries: 20, maxSearchResults: 10, maxSearchDepth: 2 }
     } as AppConfig;
     const engine = await PermissionEngine.create(config);
     const canonicalRoot = await realpath(root);
@@ -32,7 +32,7 @@ test("the most specific configured root controls its subtree", async () => {
         { path: root, permissions: ["list", "read"] },
         { path: nested, permissions: ["list"] }
       ],
-      limits: { maxFileBytes: 1024, maxSearchResults: 10, maxSearchDepth: 2 }
+      limits: { maxFileBytes: 1024, maxListEntries: 20, maxSearchResults: 10, maxSearchDepth: 2 }
     } as AppConfig;
     const engine = await PermissionEngine.create(config);
     const canonicalNested = await realpath(nested);

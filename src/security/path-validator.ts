@@ -24,7 +24,7 @@ function validateRelativePath(input: string): void {
 
   const lowerSegments = segments.map((segment) => segment.toLocaleLowerCase());
   if (lowerSegments.some((segment) =>
-    SENSITIVE_NAMES.has(segment) ||
+    (SENSITIVE_NAMES.has(segment) || segment.startsWith(".env.")) ||
     segment.endsWith(".pem") ||
     segment.endsWith(".key") ||
     segment.endsWith(".p12") ||

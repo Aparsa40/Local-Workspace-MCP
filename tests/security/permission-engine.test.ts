@@ -14,7 +14,8 @@ test("grants only explicitly configured capabilities", async () => {
       limits: { maxFileBytes: 1024, maxSearchResults: 10, maxSearchDepth: 2 }
     } as AppConfig;
     const engine = await PermissionEngine.create(config);
-    assert.equal(engine.authorize(root, "read").path, await realpath(root));
+    const canonicalRoot = await realpath(root);
+    assert.equal(engine.authorize(canonicalRoot, "read").path, canonicalRoot);
     assert.throws(() => engine.authorize(root, "search"), /denied/i);
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -34,8 +35,9 @@ test("the most specific configured root controls its subtree", async () => {
       limits: { maxFileBytes: 1024, maxSearchResults: 10, maxSearchDepth: 2 }
     } as AppConfig;
     const engine = await PermissionEngine.create(config);
-    assert.throws(() => engine.authorize(nested, "read"), /denied/i);
-    assert.equal(engine.authorize(nested, "list").path, await realpath(nested));
+    const canonicalNested = await realpath(nested);
+    assert.throws(() => engine.authorize(canonicalNested, "read"), /denied/i);
+    assert.equal(engine.authorize(canonicalNested, "list").path, canonicalNested);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

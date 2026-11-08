@@ -1,7 +1,7 @@
 import { open, opendir, stat } from "node:fs/promises";
 import path from "node:path";
 import type { AppConfig, Capability } from "../../config/config-schema.js";
-import { PermissionEngine } from "../../security/permission-engine.js";
+import type { PermissionEngine } from "../../security/permission-engine.js";
 import { resolveExistingPath } from "../../security/path-validator.js";
 
 export class FilesystemService {

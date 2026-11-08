@@ -40,7 +40,7 @@ export async function createServer(config: AppConfig): Promise<McpServer> {
 
   server.registerTool("get_file_info", {
     description: "Return limited metadata for a file or directory inside an authorized root.",
-    inputSchema: { path: z.string().min(1) }
+    inputSchema: z.object({ path: z.string().min(1) })
   }, async ({ path: relativePath }) => {
     try {
       const info = await filesystem.getFileInfo(relativePath);

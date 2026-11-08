@@ -1,4 +1,4 @@
-import { readdir, readFile, stat } from "node:fs/promises";
+import { open, readdir } from "node:fs/promises";
 import path from "node:path";
 import type { AppConfig, Capability } from "../../config/config-schema.js";
 import { PermissionEngine } from "../../security/permission-engine.js";
@@ -29,7 +29,7 @@ export class FilesystemService {
   async listFiles(relativePath: string): Promise<Array<{ name: string; type: "file" | "directory" | "other" }>> {
     const { target } = await this.resolve(relativePath, "list");
     const entries = await readdir(target, { withFileTypes: true });
-    return entries.map((entry) => ({
+    return entries.slice(0, this.config.limits.maxListEntries).map((entry) => ({
       name: entry.name,
       type: entry.isFile() ? "file" : entry.isDirectory() ? "directory" : "other"
     }));
@@ -37,21 +37,31 @@ export class FilesystemService {
 
   async readTextFile(relativePath: string): Promise<string> {
     const { target } = await this.resolve(relativePath, "read");
-    const details = await stat(target);
-    if (!details.isFile()) throw new Error("Requested resource is not a regular file.");
-    if (details.size > this.config.limits.maxFileBytes) throw new Error("File exceeds the configured size limit.");
-    return readFile(target, "utf8");
+    const handle = await open(target, "r");
+    try {
+      const details = await handle.stat();
+      if (!details.isFile()) throw new Error("Requested resource is not a regular file.");
+      if (details.size > this.config.limits.maxFileBytes) throw new Error("File exceeds the configured size limit.");
+      return await handle.readFile({ encoding: "utf8" });
+    } finally {
+      await handle.close();
+    }
   }
 
   async getFileInfo(relativePath: string): Promise<{ name: string; type: string; size: number; modifiedAt: string }> {
     const { target } = await this.resolve(relativePath, "metadata");
-    const details = await stat(target);
-    return {
-      name: path.basename(target),
-      type: details.isDirectory() ? "directory" : details.isFile() ? "file" : "other",
-      size: details.size,
-      modifiedAt: details.mtime.toISOString()
-    };
+    const handle = await open(target, "r");
+    try {
+      const details = await handle.stat();
+      return {
+        name: path.basename(target),
+        type: details.isDirectory() ? "directory" : details.isFile() ? "file" : "other",
+        size: details.size,
+        modifiedAt: details.mtime.toISOString()
+      };
+    } finally {
+      await handle.close();
+    }
   }
 
   async searchFiles(relativePath: string, query: string): Promise<string[]> {

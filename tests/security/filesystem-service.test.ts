@@ -42,3 +42,28 @@ test("filesystem service enforces configured read size limits", async () => {
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("does not reveal nested roots that deny list or search capabilities", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "lwmcp-parent-"));
+  const privateRoot = path.join(root, "private");
+  try {
+    await (await import("node:fs/promises")).mkdir(privateRoot);
+    await writeFile(path.join(root, "public.txt"), "public");
+    await writeFile(path.join(privateRoot, "secret.txt"), "private");
+    const config = {
+      roots: [
+        { path: root, permissions: ["list", "search"] },
+        { path: privateRoot, permissions: ["read"] }
+      ],
+      limits: { maxFileBytes: 128, maxListEntries: 20, maxSearchResults: 10, maxSearchDepth: 3 }
+    } as AppConfig;
+    const service = new FilesystemService(await PermissionEngine.create(config), config);
+
+    const entries = await service.listFiles("");
+    assert.ok(entries.some((entry) => entry.name === "public.txt"));
+    assert.ok(!entries.some((entry) => entry.name === "private"));
+    assert.deepEqual(await service.searchFiles("", "secret"), []);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

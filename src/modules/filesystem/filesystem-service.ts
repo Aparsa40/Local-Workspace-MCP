@@ -1,4 +1,4 @@
-import { open, readdir } from "node:fs/promises";
+import { open, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import type { AppConfig, Capability } from "../../config/config-schema.js";
 import { PermissionEngine } from "../../security/permission-engine.js";
@@ -50,18 +50,13 @@ export class FilesystemService {
 
   async getFileInfo(relativePath: string): Promise<{ name: string; type: string; size: number; modifiedAt: string }> {
     const { target } = await this.resolve(relativePath, "metadata");
-    const handle = await open(target, "r");
-    try {
-      const details = await handle.stat();
-      return {
-        name: path.basename(target),
-        type: details.isDirectory() ? "directory" : details.isFile() ? "file" : "other",
-        size: details.size,
-        modifiedAt: details.mtime.toISOString()
-      };
-    } finally {
-      await handle.close();
-    }
+    const details = await stat(target);
+    return {
+      name: path.basename(target),
+      type: details.isDirectory() ? "directory" : details.isFile() ? "file" : "other",
+      size: details.size,
+      modifiedAt: details.mtime.toISOString()
+    };
   }
 
   async searchFiles(relativePath: string, query: string): Promise<string[]> {

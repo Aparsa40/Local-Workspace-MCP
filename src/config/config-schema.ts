@@ -12,7 +12,7 @@ export const appConfigSchema = z.object({
     maxListEntries: z.number().int().positive().max(2_000).default(500),
     maxSearchResults: z.number().int().positive().max(500).default(100),
     maxSearchDepth: z.number().int().min(0).max(10).default(5)
-  }).default({})
+  }).prefault({})
 }).strict();
 
 export type AppConfig = z.infer<typeof appConfigSchema>;

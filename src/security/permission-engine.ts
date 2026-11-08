@@ -19,6 +19,9 @@ export class PermissionEngine {
     const roots: AuthorizedRoot[] = [];
     for (const configuredRoot of config.roots) {
       const canonicalRoot = await realpath(configuredRoot.path);
+      if (roots.some((root) => root.path === canonicalRoot)) {
+        throw new Error("Duplicate workspace roots are not allowed.");
+      }
       roots.push({
         path: canonicalRoot,
         permissions: new Set(configuredRoot.permissions)

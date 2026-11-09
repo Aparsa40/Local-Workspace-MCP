@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   Activity, AlertTriangle, ArrowRight, ArrowUpRight,
   Bell, Check, CheckCircle2, ChevronDown, ChevronRight, CircleHelp,
@@ -226,7 +226,7 @@ function App() {
   );
 }
 
-function PageHeading({ eyebrow, title, description, action }: { eyebrow: string; title: string; description: string; action?: React.ReactNode }) {
+function PageHeading({ eyebrow, title, description, action }: { eyebrow: string; title: string; description: string; action?: ReactNode }) {
   return <div className="page-heading"><div><div className="eyebrow">{eyebrow}</div><h1>{title}</h1><p>{description}</p></div>{action && <div className="heading-action">{action}</div>}</div>;
 }
 function Metric({ label, value, change, icon: Icon, tone = "blue" }: { label: string; value: string; change: string; icon: typeof Server; tone?: string }) {

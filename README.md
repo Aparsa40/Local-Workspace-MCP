@@ -4,6 +4,21 @@ A local, policy-controlled MCP server that gives AI assistants and agents explic
 
 > **Status:** Early foundation implementation. The initial server exposes read-only filesystem tools. Write, delete, Git, terminal, and PowerShell capabilities are not enabled yet.
 
+## Product plan and project direction
+
+The agreed target is an independent Windows desktop application with its own management UI and a separately executable MCP Core. It must remain usable without ParsSynapse Chat or any other specific MCP client. External compatible MCP clients can launch the Core directly over stdio.
+
+The product plan is documented here:
+
+- [Product Blueprint](docs/PRODUCT_BLUEPRINT.md) — product vision, scope, screens, security boundaries, and acceptance criteria.
+- [UI/UX Specification](docs/UI_UX_SPEC.md) — navigation, screen behavior, workflows, and required UI states.
+- [Implementation Roadmap](docs/IMPLEMENTATION_ROADMAP.md) — current baseline, delivery phases, and acceptance gates.
+- [Architecture Decision Records](docs/ARCHITECTURE_DECISIONS.md) — durable decisions and open technical validations.
+- [Core Architecture](architecture.md) — logical server components and security design.
+- [Security Policy](SECURITY.md) — vulnerability reporting and security requirements.
+
+These documents describe the intended product. They do not imply that planned UI, desktop management, mutation tools, or future modules have already been implemented. Update the roadmap as implementation is verified.
+
 ## Features in this foundation
 
 - MCP over local **stdio**; no network listener.
@@ -64,7 +79,7 @@ npm run build
 npm audit --audit-level=high
 ```
 
-CI runs typecheck, lint, tests, build, and dependency audit. Dependency Review runs on pull requests; CodeQL runs on pushes, pull requests, and a weekly schedule. The first CI run will validate the initial dependency graph; a committed lockfile should be added after the first local install.
+CI runs typecheck, lint, tests, build, and dependency audit. Dependency Review runs on pull requests; CodeQL runs on pushes, pull requests, and a weekly schedule.
 
 ## Security notes
 
@@ -73,8 +88,6 @@ CI runs typecheck, lint, tests, build, and dependency audit. Dependency Review r
 - Do not configure broad roots such as an entire drive or user profile.
 - Do not expose the server through a network transport.
 - This initial implementation is read-only. Future write-capable modules require separate capabilities, tests, and review.
-
-See [SECURITY.md](SECURITY.md) and [architecture.md](architecture.md).
 
 ## License
 

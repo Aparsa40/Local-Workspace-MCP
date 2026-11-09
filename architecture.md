@@ -1,5 +1,7 @@
 # Architecture
 
+> **Product direction:** The intended product is an independent Windows desktop application with a separately executable MCP Core. See [Product Blueprint](docs/PRODUCT_BLUEPRINT.md), [UI/UX Specification](docs/UI_UX_SPEC.md), [Implementation Roadmap](docs/IMPLEMENTATION_ROADMAP.md), and [Architecture Decision Records](docs/ARCHITECTURE_DECISIONS.md). The logical Core architecture below describes the server boundary; it does not imply the desktop application is already implemented.
+
 ## 1. Purpose
 
 Local-Workspace-MCP is a local capability gateway between MCP clients and explicitly authorized workstation resources. Its first responsibility is controlled filesystem access. Future integrations may include Git, terminal, PowerShell, and selected developer tools, but each must remain an independently authorized module.
@@ -189,6 +191,7 @@ Adding a module must not automatically grant it access to filesystem roots or ca
 - Launch as a local child process from an MCP client.
 - Do not open a listening network port.
 - Keep configuration and process ownership local to the user.
+- A stdio client normally owns its own Core process; it is not a shared daemon.
 
 ### Future: Streamable HTTP
 
@@ -231,3 +234,5 @@ The initial baseline decisions are:
 5. Keep future Git, terminal, PowerShell, and developer integrations isolated behind their own capabilities and policies.
 6. Run without administrator privileges.
 7. Require tests for path confinement and policy precedence before enabling write or destructive tools.
+
+See [Architecture Decision Records](docs/ARCHITECTURE_DECISIONS.md) for the product-level desktop, process, and management-plane decisions.

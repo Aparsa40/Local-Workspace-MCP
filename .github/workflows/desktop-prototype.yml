@@ -6,7 +6,7 @@ on:
       - "desktop-prototype/**"
       - ".github/workflows/desktop-prototype.yml"
   push:
-    branches: [main]
+    branches: [main, 'feat/**']
     paths:
       - "desktop-prototype/**"
       - ".github/workflows/desktop-prototype.yml"

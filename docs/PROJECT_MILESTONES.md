@@ -43,7 +43,7 @@ Already implemented in the repository:
 - Dedicated, bounded Core control protocol over inherited pipes, separate from MCP stdio.
 - Node-only CoreProcessManager with real child-process integration tests on Linux and Windows.
 - Versioned PolicyStore with validation, revision checks, backup/recovery, and failure-injection coverage.
-- Seven-screen React prototype (still demo-only).
+- Approved seven-screen React visual system, now bundled in Electron with initial live backend integration.
 
 Merged to main in PR #25:
 - Electron app shell and main-process lifecycle foundation.
@@ -62,9 +62,11 @@ Implemented in the current M1 branch (pending review and CI):
 - Made an empty workspace list a valid default-deny policy.
 
 Still required to complete M1:
-- Full Windows GUI launch and end-to-end reload/failure/shutdown verification.
-- Complete Activity & Audit through the structured persistent audit pipeline, plus remaining Settings behavior.
-- Complete IPC threat review and Windows desktop smoke tests.
+- Full Windows GUI launch and end-to-end folder selection, policy save/reload, failure handling, and shutdown verification.
+- Complete the IPC threat model and Windows desktop security review.
+- Verify that external stdio clients remain independent of the Desktop App lifecycle.
+
+Structured persistent Activity & Audit and the remaining Settings workflows belong to the later functional-management delivery stage, not the M1 security foundation.
 
 The merged Node-only CoreProcessManager was a prerequisite; this branch adds the first Electron integration but does not complete M1.
 

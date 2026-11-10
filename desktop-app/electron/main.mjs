@@ -16,7 +16,7 @@ function createMainWindow() {
     minHeight: 640,
     show: false,
     webPreferences: {
-      preload: path.join(currentDirectory, "preload.mjs"),
+      preload: path.join(currentDirectory, "preload.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -42,7 +42,7 @@ function createMainWindow() {
 app.whenReady().then(() => {
   runtime = new ElectronMainRuntime({
     appDataPath: app.getPath("userData"),
-    coreEntryPath: path.resolve(app.getAppPath(), "dist", "index.js"),
+    coreEntryPath: app.isPackaged\n      ? path.join(process.resourcesPath, "core", "index.js")\n      : path.resolve(currentDirectory, "..", "..", "dist", "index.js"),
     electronExecutablePath: process.execPath,
     appVersion: app.getVersion(),
     ipcMain,

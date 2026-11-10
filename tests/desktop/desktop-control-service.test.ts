@@ -1,9 +1,10 @@
 import test, { type TestContext } from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdtemp, mkdir, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { DesktopControlService } from "../../desktop-app/electron/services/desktop-control-service.js";
+import { DesktopControlService, getCorePolicyRevision } from "../../desktop-app/electron/services/desktop-control-service.js";
 import { PolicyStore } from "../../desktop-app/electron/services/policy-store.js";
 import type { ManagedCoreStatus } from "../../desktop-app/electron/services/core-process-manager.js";
 
@@ -28,9 +29,9 @@ class FakeCoreManager {
     return this.getStatus();
   }
 
-  async reloadPolicy(_config: unknown): Promise<string> {
+  async reloadPolicy(config: unknown): Promise<string> {
     if (this.failReload) throw new Error("simulated reload failure");
-    this.#revision = "a".repeat(64);
+    this.#revision = createHash("sha256").update(JSON.stringify(config), "utf8").digest("hex");
     return this.#revision;
   }
 
@@ -84,22 +85,26 @@ test("reports an unconfigured policy without inventing an active revision", asyn
   assert.equal(status.core.activeRevision, undefined);
 });
 
-test("starts Core only when its startup revision matches the saved policy", async (t) => {
+test("starts Core only when its normalized runtime revision matches the saved policy", async (t) => {
   const { service, manager, workspace } = await setup(t);
   const saved = await service.savePolicy(proposal(workspace), "");
-  manager.setStartRevision(saved.savedRevision);
+  const policy = await service.getPolicy();
+  assert.ok(policy.document);
+  manager.setStartRevision(getCorePolicyRevision(policy.document));
   const result = await service.startCore();
   assert.equal(result.core.state, "running");
   assert.equal(result.core.policyApplied, true);
-  assert.equal(result.core.activeRevision, saved.savedRevision);
+  assert.equal(result.core.activeRevision, getCorePolicyRevision(policy.document));
+  assert.notEqual(result.core.activeRevision, saved.savedRevision);
 });
 
 test("does not claim a policy is active when Core reload fails", async (t) => {
   const { service, manager, workspace } = await setup(t);
   const first = await service.savePolicy(proposal(workspace), "");
-  assert.equal(first.applied, false);
+  const firstPolicy = await service.getPolicy();
+  assert.ok(firstPolicy.document);
 
-  manager.setRunning(first.savedRevision);
+  manager.setRunning(getCorePolicyRevision(firstPolicy.document));
   manager.failReload = true;
   const next = await service.savePolicy(proposal(workspace, ["list"]), first.savedRevision);
 

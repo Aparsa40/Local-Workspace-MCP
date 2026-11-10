@@ -66,10 +66,17 @@ export class CoreProcessManagerError extends Error {
  * policy management uses only inherited descriptors 3/4.
  */
 export class CoreProcessManager {
-  readonly #options: Required<Pick<
-    CoreProcessManagerOptions,
-    "executablePath" | "cwd" | "configPath" | "startupTimeoutMs" | "requestTimeoutMs" | "stopTimeoutMs" | "maxStderrBytes"
-  >> & Pick<CoreProcessManagerOptions, "args" | "env">;
+  readonly #options: {
+    readonly executablePath: string;
+    readonly args: readonly string[];
+    readonly cwd: string;
+    readonly configPath: string;
+    readonly env: NodeJS.ProcessEnv;
+    readonly startupTimeoutMs: number;
+    readonly requestTimeoutMs: number;
+    readonly stopTimeoutMs: number;
+    readonly maxStderrBytes: number;
+  };
   #child: ChildProcess | undefined;
   #controlInput: Duplex | undefined;
   #controlOutput: Duplex | undefined;
@@ -127,7 +134,7 @@ export class CoreProcessManager {
 
     const child = spawn(
       this.#options.executablePath,
-      [...(this.#options.args ?? [])],
+      [...this.#options.args],
       {
         cwd: this.#options.cwd,
         env: {
@@ -281,7 +288,7 @@ export class CoreProcessManager {
     }
 
     const requestId = randomUUID();
-    const frame = `${JSON.stringify({ protocolVersion: 1, requestId, method, params })}\\n`;
+    const frame = `${JSON.stringify({ protocolVersion: 1, requestId, method, params })}\n`;
     if (Buffer.byteLength(frame, "utf8") > MAX_CONTROL_MESSAGE_BYTES) {
       return Promise.reject(new CoreProcessManagerError("REQUEST_TOO_LARGE", "The policy control request exceeds 64 KiB."));
     }

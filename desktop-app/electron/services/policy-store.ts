@@ -66,13 +66,27 @@ export class PolicyStore {
     }
   }
 
+  async hasStoredPolicy(): Promise<boolean> {
+    for (const filePath of [this.#filePath, this.#backupPath]) {
+      try {
+        await stat(filePath);
+        return true;
+      } catch (error) {
+        if (!this.#isMissingFileAtPath(error, filePath)) throw error;
+      }
+    }
+    return false;
+  }
+
   async load(): Promise<PolicySnapshot> {
     try {
       const document = await this.#readValidated(this.#filePath);
       return this.#snapshot(document, false);
     } catch (primaryError) {
-      if (!this.#isMissingFile(primaryError)) {
-        // A malformed active file is not silently replaced by a backup.
+      // Recover only when the active policy file itself is missing. An ENOENT
+      // raised while resolving a workspace root must never select an older
+      // backup policy and silently restore stale permissions.
+      if (!this.#isMissingFileAtPath(primaryError, this.#filePath)) {
         throw primaryError;
       }
     }
@@ -115,7 +129,7 @@ export class PolicyStore {
       currentRevision = this.#revision(serializePolicyDocument(currentDocument));
       hasCurrent = true;
     } catch (error) {
-      if (!this.#isMissingFile(error)) throw error;
+      if (!this.#isMissingFileAtPath(error, this.#filePath)) throw error;
     }
 
     if (currentRevision !== expectedRevision) {
@@ -219,8 +233,10 @@ export class PolicyStore {
     return createHash("sha256").update(serialized, "utf8").digest("hex");
   }
 
-  #isMissingFile(error: unknown): boolean {
+  #isMissingFileAtPath(error: unknown, expectedPath: string): boolean {
     return typeof error === "object" && error !== null &&
-      "code" in error && error.code === "ENOENT";
+      "code" in error && error.code === "ENOENT" &&
+      "path" in error && typeof error.path === "string" &&
+      path.resolve(error.path) === expectedPath;
   }
 }

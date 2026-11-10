@@ -1,13 +1,11 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
-import type { AppConfig } from "../config/config-schema.js";
+import type { PolicyRuntime } from "../security/policy-runtime.js";
 import { audit } from "../audit/audit-logger.js";
 import { FilesystemService } from "../modules/filesystem/filesystem-service.js";
-import { PermissionEngine } from "../security/permission-engine.js";
 
-export async function createServer(config: AppConfig): Promise<McpServer> {
-  const policy = await PermissionEngine.create(config);
-  const filesystem = new FilesystemService(policy, config);
+export async function createServer(runtime: PolicyRuntime): Promise<McpServer> {
+  const filesystem = new FilesystemService(runtime);
   const server = new McpServer({ name: "local-workspace-mcp", version: "0.1.0" });
 
   server.registerTool("list_files", {

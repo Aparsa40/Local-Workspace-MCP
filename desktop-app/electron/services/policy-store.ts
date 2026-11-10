@@ -99,7 +99,6 @@ export class PolicyStore {
     let currentRevision = "";
     let hasCurrent = false;
     try {
-      const current = await readFile(this.#filePath, "utf8");
       const currentDocument = await this.#readValidated(this.#filePath);
       currentRevision = this.#revision(serializePolicyDocument(currentDocument));
       hasCurrent = true;

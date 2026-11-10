@@ -2,13 +2,25 @@
   "name": "local-workspace-mcp-desktop",
   "version": "0.1.0",
   "private": true,
-  "description": "Electron desktop shell for Local-Workspace-MCP",
+  "description": "Electron desktop application for Local-Workspace-MCP",
   "main": "electron/main.mjs",
   "scripts": {
     "dev": "electron .",
-    "start": "electron ."
+    "start": "electron .",
+    "build:ui": "tsc --noEmit -p tsconfig.ui.json && vite build",
+    "build": "npm run build:ui"
+  },
+  "dependencies": {
+    "lucide-react": "0.468.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
   },
   "devDependencies": {
-    "electron": "45.2.3"
+    "@types/react": "19.1.0",
+    "@types/react-dom": "19.1.0",
+    "@vitejs/plugin-react": "4.4.1",
+    "electron": "45.2.3",
+    "typescript": "5.9.3",
+    "vite": "6.3.5"
   }
 }

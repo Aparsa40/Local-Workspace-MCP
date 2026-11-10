@@ -100,3 +100,9 @@ test("converts the versioned document to the existing Core runtime shape", () =>
   assert.deepEqual(Object.keys(config).sort(), ["limits", "roots"]);
   assert.equal("schemaVersion" in config, false);
 });
+
+test("allows an empty workspace list as a valid default-deny policy", () => {
+  const result = parsePolicyDocument({ schemaVersion: 1, roots: [], limits: {} });
+  assert.deepEqual(result.document.roots, []);
+  assert.deepEqual(toAppConfig(result.document).roots, []);
+});

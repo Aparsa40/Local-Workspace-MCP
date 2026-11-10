@@ -31,10 +31,8 @@ These are repository observations, not a claim that every security property has 
 ### Not yet present
 - Full Windows desktop launch and end-to-end manual verification of the Electron application.
 - Persistent structured audit viewer, retention, and rotation.
-- Complete operational behavior across every Settings and Activity & Audit control.
+- Remaining Settings controls and diagnostics.
 - Installer and release/update workflow.
-- Persistent structured audit viewer, retention, and rotation.
-- End-to-end Electron-managed policy reload/revocation; direct client-owned stdio processes remain independently managed by their MCP clients.
 - Write/create/move/rename/delete tools.
 - Workspace tree tool.
 - Production Connections/client configuration screen.

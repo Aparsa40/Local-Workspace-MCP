@@ -30,7 +30,7 @@ These are repository observations, not a claim that every security property has 
 
 ### Not yet present
 - Production Electron desktop application and hardened preload bridge.
-- Desktop runtime / process manager.
+- Electron app shell and process lifecycle/IPC integration (a Node-only Core process manager service is implemented, but not yet wired into Electron).
 - Implemented management IPC handlers.
 - Actual UI-driven policy editing and validation.
 - Persistent structured audit viewer, retention, and rotation.
@@ -92,8 +92,9 @@ Work:
 - [x] Add a Node-only desktop policy-store module with versioned schema validation, canonical existing-directory checks, same-directory temporary writes, previous-policy backup, SHA-256 revisions, and stale-write rejection.
 - [x] Verify deterministic policy replacement-failure recovery and retry behavior in Linux and Windows CI (PR #18). This is targeted fault-injection coverage, not a guarantee against power loss or every filesystem failure.
 - [x] Define an immutable Core policy snapshot and explicit, revision-checked, serialized in-process reload API; filesystem operations capture one consistent snapshot per request.
-- [x] Define and implement a bounded Core-side management protocol for policy reload over dedicated inherited pipes, separate from MCP stdin/stdout (ADR-009); unit tests cover success, stale revision, malformed frames, and size limits.
-- [ ] Attach the protocol to Electron-main-owned child-process pipes and integrate policy-store saves with Core reload; no end-to-end desktop control path is enabled yet.
+- [x] Define and implement a bounded Core-side management protocol for policy.getRevision and policy.reload over dedicated inherited pipes, separate from MCP stdin/stdout (ADR-009); unit tests cover revision handshake, successful reload, stale revision, malformed frames, and size limits.
+- [x] Activate the Core control protocol only when an explicit launcher marker is set and both inherited descriptors are verified as pipes; ordinary MCP client launches remain unchanged.
+- [ ] Wire CoreProcessManager and PolicyStore into Electron main-process IPC; no renderer-facing policy management flow is enabled yet.
 - [ ] Define the Core tool metadata/registry contract.
 - [ ] Define the structured audit event schema, correlation IDs, retention, and redaction.
 - [ ] Complete a threat model for desktop IPC, policy writes, and Windows filesystem operations.
@@ -126,10 +127,11 @@ Acceptance:
 
 ## Phase 4 — Desktop backend and process/configuration management
 
-**Status: Planned.**
+**Status: In progress.**
 
 Work:
-- Implement the desktop main process and restricted IPC.
+- [x] Implement a Node-only CoreProcessManager that launches an app-managed Core child with dedicated pipes, performs an initial revision handshake, serializes reloads, bounds stderr capture, and shuts the child down safely; real child-process pipe tests pass on Linux and Windows.
+- [ ] Implement the Electron main process and restricted IPC, then wire CoreProcessManager and PolicyStore into validated policy operations.
 - Manage application settings and policy files.
 - Validate policy before save.
 - Use atomic file replacement and backup/recovery.

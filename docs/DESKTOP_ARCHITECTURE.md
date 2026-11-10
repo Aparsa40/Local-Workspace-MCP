@@ -198,16 +198,16 @@ A UI must never label a policy revision as active until the Core behavior that e
 
 The Core now provides a separately testable, bounded management protocol in src/desktop/policy-control-channel.ts. It is designed for two private OS pipes inherited only by an Electron-main-launched Core child: child descriptor 3 carries requests into Core and descriptor 4 carries responses back to the parent. MCP JSON-RPC remains on the child's stdin/stdout and is never multiplexed with management traffic.
 
-Protocol version 1 currently supports only policy.reload. Each newline-delimited JSON frame must be at most 64 KiB and contain a UUID request ID, the current expected SHA-256 revision, and the complete proposed Core config. Core validates the request and config, then delegates to PolicyRuntime.reload; stale revisions and invalid policies return stable error codes. Raw errors and stack traces are not returned.
+Protocol version 1 supports policy.getRevision for the active Core revision handshake and policy.reload for applying a complete replacement config. Each newline-delimited JSON frame must be at most 64 KiB and contain a UUID request ID, the current expected SHA-256 revision, and the complete proposed Core config. Core validates the request and config, then delegates to PolicyRuntime.reload; stale revisions and invalid policies return stable error codes. Raw errors and stack traces are not returned.
 
-The Core entrypoint activates this handler only when LWMCP_CONTROL_CHANNEL=1 is explicitly set and both inherited descriptors are verified as pipes. Ordinary client-owned Core processes do not set this marker and do not inspect or use descriptors 3/4. The Electron main process does not yet create these pipes or manage Core children, so end-to-end desktop policy reload is still pending. Until that integration and Windows lifecycle tests are complete, policy file saves must not be described as immediately revoking permissions in existing sessions.
+The Core entrypoint activates this handler only when LWMCP_CONTROL_CHANNEL=1 is explicitly set and both inherited descriptors are verified as pipes. Ordinary client-owned Core processes do not set this marker and do not inspect or use descriptors 3/4. The CoreProcessManager service now owns a child process, reads the initial Core revision, sends serialized reload requests, bounds stderr capture, and performs graceful shutdown. The Electron main process and its restricted renderer IPC are not yet wired to this service, so the graphical policy-save workflow remains pending. Until that integration and Windows lifecycle tests are complete, policy file saves must not be described as immediately revoking permissions in existing sessions.
 
 ## 8. Core process lifecycle
 
 The Core has two supported lifecycle modes:
 
 1. **Client-owned stdio process:** launched directly by an MCP client using the generated command and configuration path. It must work without the Desktop App.
-2. **App-managed diagnostic process:** launched by Electron only for a bounded handshake or diagnostic operation, with captured stderr, timeout, cancellation, and guaranteed cleanup.
+2. **App-managed Core process:** launched and owned by the Electron main process through CoreProcessManager, with dedicated management pipes, bounded stderr capture, request timeouts, policy revision handshake, and graceful shutdown. This is a separate managed process; it does not turn client-owned stdio processes into a shared daemon.
 
 The Desktop App must not claim to start, stop, or observe third-party client-owned processes unless a concrete supported mechanism exists. A stdio server is not a shared daemon.
 

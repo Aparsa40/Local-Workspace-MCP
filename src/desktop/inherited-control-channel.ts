@@ -10,7 +10,15 @@ export type PipeInspector = (descriptor: number) => boolean;
 /** Enable the management channel only when the trusted launcher opts in. */
 export function isControlChannelEnabled(
   env: NodeJS.ProcessEnv = process.env,
-  isPipe: PipeInspector = (descriptor) => fstatSync(descriptor).isFIFO()
+  isPipe: PipeInspector = (descriptor) => {
+    const details = fstatSync(descriptor);
+    // Windows may report anonymous inherited pipe handles with mode 0 rather
+    // than classifying them as FIFO/socket. A successful fstat that is not a
+    // regular file, directory, character device, or block device is accepted.
+    return details.isFIFO() || details.isSocket() ||
+      (!details.isFile() && !details.isDirectory() &&
+       !details.isCharacterDevice() && !details.isBlockDevice());
+  }
 ): boolean {
   if (env.LWMCP_CONTROL_CHANNEL !== "1") return false;
 

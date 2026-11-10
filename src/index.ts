@@ -1,11 +1,13 @@
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import { loadConfig } from "./config/config-loader.js";
 import { createServer } from "./server/create-server.js";
+import { PolicyRuntime } from "./security/policy-runtime.js";
 
 async function main(): Promise<void> {
   const config = await loadConfig();
+  const runtime = await PolicyRuntime.create(config);
   process.stderr.write("Local-Workspace-MCP starting over stdio.\n");
-  await serveStdio(() => createServer(config));
+  await serveStdio(() => createServer(runtime));
 }
 
 main().catch((error: unknown) => {

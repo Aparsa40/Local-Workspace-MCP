@@ -190,7 +190,7 @@ A failed save must leave the previous valid policy intact. Concurrent or stale s
 
 This is a critical security requirement: stdio clients launch independent Core processes, and the current Core loads policy once at startup. Merely replacing the JSON file does **not** revoke permissions already loaded by an existing process.
 
-Before the desktop app can claim that a revocation is active, Core must support a safe policy-reload strategy for all processes using the same policy file, or the product must explicitly report that existing sessions may retain the previous policy until they exit. The preferred implementation is a validated, atomic policy snapshot reload in Core with fail-closed behavior on invalid updates. This behavior requires race, malformed-file, and concurrent-client tests.
+Core now has an immutable in-process policy snapshot and an explicit revision-checked reload API. A reload validates and constructs the complete replacement before publishing it; failed validation leaves the current snapshot untouched, and competing stale reloads are rejected. Filesystem operations capture one snapshot for the full request. This API is not yet connected to a desktop management channel or file watcher, so replacing the policy JSON file alone still does not reload an already-running stdio process. Until that integration is implemented and verified, existing sessions must be treated as retaining their startup policy.
 
 A UI must never label a policy revision as active until the Core behavior that enforces that revision is verified.
 

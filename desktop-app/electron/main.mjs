@@ -10,18 +10,31 @@ let quitting = false;
 let smokeTimer;
 const smokeMode = process.env.CI === "true" || process.env.LWMCP_ELECTRON_SMOKE === "1" || process.argv.includes("--lwmcp-smoke-test") || app.commandLine.hasSwitch("lwmcp-smoke-test");
 
+if (smokeMode) {
+  process.stdout.write("Electron smoke mode recognized by the main process.\\n");
+  smokeTimer = setTimeout(() => {
+    process.stderr.write("Electron smoke startup timed out before renderer verification.\\n");
+    process.exit(1);
+  }, 30_000);
+}
+
 function finishSmoke(exitCode) {
   if (smokeTimer) clearTimeout(smokeTimer);
   const activeRuntime = runtime;
   runtime = undefined;
+  const cleanupFallback = setTimeout(() => process.exit(exitCode), 5_000);
   void Promise.resolve(activeRuntime?.dispose())
     .catch((error) => {
       process.stderr.write(`Electron smoke cleanup failed: ${error instanceof Error ? error.message : "unknown error"}\n`);
     })
-    .finally(() => app.exit(exitCode));
+    .finally(() => {
+      clearTimeout(cleanupFallback);
+      app.exit(exitCode);
+    });
 }
 
 function verifySmokeWindow(window) {
+  if (smokeTimer) clearTimeout(smokeTimer);
   smokeTimer = setTimeout(() => {
     process.stderr.write("Electron smoke verification timed out.\n");
     finishSmoke(1);

@@ -59,3 +59,20 @@ This file records decisions that materially affect product structure and integra
 - **Decision:** A policy edit is not considered effective for active Core processes merely because the policy file was replaced. Core must validate and atomically adopt a new policy snapshot, or the UI must clearly state that existing sessions retain the previous revision until restart.
 - **Context:** The current Core loads policy once at startup, while stdio clients launch independent processes. A file-only update could otherwise leave revoked permissions active in existing processes.
 - **Consequences:** Implement and test a safe Core policy reload mechanism before claiming immediate revocation. Invalid updates must not partially replace the active policy; the effective revision must be observable.
+
+
+## ADR-009 — Dedicated inherited pipes for app-managed Core control
+
+- **Status:** Accepted for the Core-side protocol; Electron process integration remains pending
+- **Decision:** App-managed Core children may receive a versioned, bounded newline-delimited management protocol over dedicated inherited OS pipes (child file descriptors 3 and 4). MCP protocol traffic remains exclusively on stdin/stdout.
+- **Context:** A desktop process needs a trusted way to request policy reload in a Core process it launched, without adding a network listener or mixing management messages with MCP JSON-RPC.
+- **Consequences:** The Core protocol accepts only strict policy.reload requests with a UUID request ID, expected SHA-256 revision, and complete validated config. Core validates again and atomically publishes a new immutable snapshot. Frames are size-limited; responses contain stable error codes and no raw stack traces. The Electron main process must own the pipe handles and must never expose them to the renderer or MCP tools. Client-owned Core processes launched directly by external MCP clients do not receive or require this channel.
+- **Limitations:** The protocol handler is implemented and tested independently, but src/index.ts does not yet attach inherited descriptors and the Electron main process does not yet spawn/control managed Core children. No immediate revocation claim is valid until that end-to-end integration is complete and tested on Windows.
+
+## ADR-009 — Dedicated inherited pipes for app-managed Core control
+
+- **Status:** Accepted for the Core-side protocol; Electron process integration remains pending
+- **Decision:** App-managed Core children may receive a versioned, bounded newline-delimited management protocol over dedicated inherited OS pipes (child file descriptors 3 and 4). MCP protocol traffic remains exclusively on stdin/stdout.
+- **Context:** A desktop process needs a trusted way to request policy reload in a Core process it launched, without adding a network listener or mixing management messages with MCP JSON-RPC.
+- **Consequences:** The Core protocol accepts only strict policy.reload requests with a UUID request ID, expected SHA-256 revision, and complete validated config. Core validates again and atomically publishes a new immutable snapshot. Frames are size-limited; responses contain stable error codes and no raw stack traces. The Electron main process must own the pipe handles and must never expose them to the renderer or MCP tools. Client-owned Core processes launched directly by external MCP clients do not receive or require this channel.
+- **Limitations:** The protocol handler is implemented and tested independently, but src/index.ts does not yet attach inherited descriptors and the Electron main process does not yet spawn/control managed Core children. No immediate revocation claim is valid until that end-to-end integration is complete and tested on Windows.

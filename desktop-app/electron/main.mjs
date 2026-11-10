@@ -8,7 +8,7 @@ let mainWindow;
 let runtime;
 let quitting = false;
 let smokeTimer;
-const smokeMode = process.env.LWMCP_ELECTRON_SMOKE === "1" || process.argv.includes("--lwmcp-smoke-test");
+const smokeMode = process.env.CI === "true" || process.env.LWMCP_ELECTRON_SMOKE === "1" || process.argv.includes("--lwmcp-smoke-test");
 
 function finishSmoke(exitCode) {
   if (smokeTimer) clearTimeout(smokeTimer);
@@ -111,6 +111,7 @@ app.whenReady().then(() => {
   });
   const window = createMainWindow();
   if (smokeMode) {
+    process.stdout.write("Electron smoke mode active.\\n");
     verifySmokeWindow(window);
   }
   void window.loadFile(path.join(currentDirectory, "..", "ui-dist", "index.html")).catch((error) => {

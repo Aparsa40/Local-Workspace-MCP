@@ -66,6 +66,8 @@ jobs:
       - run: npm test
       - run: npm exec -- electron --version
         working-directory: desktop-app
+      - run: $env:LWMCP_ELECTRON_SMOKE = "1"; npm exec -- electron --no-sandbox .
+        working-directory: desktop-app
 
   build:
     name: CI / Build

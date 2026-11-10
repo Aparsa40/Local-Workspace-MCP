@@ -41,6 +41,7 @@ export class PolicyRevisionConflictError extends Error {
 export class PolicyStore {
   readonly #filePath: string;
   readonly #backupPath: string;
+  #saveTail: Promise<void> = Promise.resolve();
 
   constructor(options: PolicyStoreOptions) {
     if (!path.isAbsolute(options.filePath)) {
@@ -69,6 +70,23 @@ export class PolicyStore {
   }
 
   async save(
+    proposal: unknown,
+    expectedRevision: string
+  ): Promise<SavePolicyResult> {
+    // Serialize saves issued through this store instance so two IPC requests
+    // cannot both pass the same revision check and overwrite one another.
+    const previousSave = this.#saveTail;
+    let release!: () => void;
+    this.#saveTail = new Promise<void>((resolve) => { release = resolve; });
+    await previousSave;
+    try {
+      return await this.#saveUnlocked(proposal, expectedRevision);
+    } finally {
+      release();
+    }
+  }
+
+  async #saveUnlocked(
     proposal: unknown,
     expectedRevision: string
   ): Promise<SavePolicyResult> {

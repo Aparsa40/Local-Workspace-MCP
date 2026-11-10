@@ -5,8 +5,9 @@ import { PolicyRuntime } from "./security/policy-runtime.js";
 
 async function main(): Promise<void> {
   const config = await loadConfig();
+  const runtime = await PolicyRuntime.create(config);
   process.stderr.write("Local-Workspace-MCP starting over stdio.\n");
-  await serveStdio(() => createServer(config));
+  await serveStdio(() => createServer(runtime));
 }
 
 main().catch((error: unknown) => {

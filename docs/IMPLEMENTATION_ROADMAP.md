@@ -90,8 +90,9 @@ Work:
 - [x] Document atomic policy persistence, revision checks, and active-session revocation requirements.
 - [x] Define a version 1 policy document schema and in-memory migration from the legacy unversioned Core config.
 - [x] Add a Node-only desktop policy-store module with versioned schema validation, canonical existing-directory checks, same-directory temporary writes, previous-policy backup, SHA-256 revisions, and stale-write rejection.
-- [ ] Verify Windows replacement/recovery behavior in CI and add crash/fault-injection coverage before treating persistence as production-ready.
-- [ ] Define and implement the Core policy snapshot reload contract.
+- [x] Verify deterministic policy replacement-failure recovery and retry behavior in Linux and Windows CI (PR #18). This is targeted fault-injection coverage, not a guarantee against power loss or every filesystem failure.
+- [x] Define an immutable Core policy snapshot and explicit, revision-checked, serialized in-process reload API; filesystem operations capture one consistent snapshot per request.
+- [ ] Connect the reload API to a trusted desktop management/control path or a separately reviewed file-change signal; no file watcher or external reload channel is enabled yet.
 - [ ] Define the Core tool metadata/registry contract.
 - [ ] Define the structured audit event schema, correlation IDs, retention, and redaction.
 - [ ] Complete a threat model for desktop IPC, policy writes, and Windows filesystem operations.

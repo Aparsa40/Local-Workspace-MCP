@@ -1,4 +1,6 @@
 node_modules/
+desktop-app/node_modules/
+desktop-app/ui-dist/
 dist/
 dist-desktop/
 coverage/

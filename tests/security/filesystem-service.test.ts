@@ -57,7 +57,7 @@ test("does not reveal nested roots that deny list or search capabilities", async
       ],
       limits: { maxFileBytes: 128, maxListEntries: 20, maxSearchResults: 10, maxSearchDepth: 3 }
     } as AppConfig;
-    const service = new FilesystemService(await PermissionEngine.create(config), config);
+    const service = new FilesystemService(await PolicyRuntime.create(config));
 
     const entries = await service.listFiles("");
     assert.ok(entries.some((entry) => entry.name === "public.txt"));

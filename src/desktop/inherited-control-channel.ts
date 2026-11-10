@@ -10,7 +10,10 @@ export type PipeInspector = (descriptor: number) => boolean;
 /** Enable the management channel only when the trusted launcher opts in. */
 export function isControlChannelEnabled(
   env: NodeJS.ProcessEnv = process.env,
-  isPipe: PipeInspector = (descriptor) => {\n    const details = fstatSync(descriptor);\n    return details.isFIFO() || details.isSocket();\n  }
+  isPipe: PipeInspector = (descriptor) => {
+    const details = fstatSync(descriptor);
+    return details.isFIFO() || details.isSocket();
+  }
 ): boolean {
   if (env.LWMCP_CONTROL_CHANNEL !== "1") return false;
 

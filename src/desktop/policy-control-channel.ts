@@ -2,7 +2,8 @@ import { once } from "node:events";
 import type { Readable, Writable } from "node:stream";
 import { z } from "zod";
 import { appConfigSchema } from "../config/config-schema.js";
-import { PolicyRuntime, PolicyRuntimeRevisionConflictError } from "../security/policy-runtime.js";
+import { PolicyRuntimeRevisionConflictError } from "../security/policy-runtime.js";
+import type { PolicyRuntime } from "../security/policy-runtime.js";
 
 const MAX_CONTROL_MESSAGE_BYTES = 64 * 1024;
 

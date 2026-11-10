@@ -27,7 +27,12 @@ test("starts a managed Core child and reloads policy over inherited pipes", asyn
     await rm(root, { recursive: true, force: true });
   });
 
-  let started;\n  try {\n    started = await manager.start();\n  } catch (error) {\n    throw new Error(`${error instanceof Error ? error.message : "unknown"}; stderr: ${manager.getStatus().stderrTail}`);\n  }
+  let started;
+  try {
+    started = await manager.start();
+  } catch (error) {
+    throw new Error(`${error instanceof Error ? error.message : "unknown"}; stderr: ${manager.getStatus().stderrTail}`);
+  }
   assert.equal(started.state, "running");
   assert.ok(started.pid);
   assert.match(started.revision ?? "", /^[a-f0-9]{64}$/);

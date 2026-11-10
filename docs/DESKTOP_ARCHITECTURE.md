@@ -200,7 +200,7 @@ The Core now provides a separately testable, bounded management protocol in src/
 
 Protocol version 1 currently supports only policy.reload. Each newline-delimited JSON frame must be at most 64 KiB and contain a UUID request ID, the current expected SHA-256 revision, and the complete proposed Core config. Core validates the request and config, then delegates to PolicyRuntime.reload; stale revisions and invalid policies return stable error codes. Raw errors and stack traces are not returned.
 
-This is the Core-side protocol primitive, not a completed desktop integration: the Electron main process does not yet create these pipes or attach them to managed Core children, and the Core entrypoint does not yet activate the handler. Direct client-owned stdio processes remain unchanged and do not need a management channel. Until the end-to-end process integration and Windows lifecycle tests are complete, policy file saves must not be described as immediately revoking permissions in existing sessions.
+The Core entrypoint activates this handler only when LWMCP_CONTROL_CHANNEL=1 is explicitly set and both inherited descriptors are verified as pipes. Ordinary client-owned Core processes do not set this marker and do not inspect or use descriptors 3/4. The Electron main process does not yet create these pipes or manage Core children, so end-to-end desktop policy reload is still pending. Until that integration and Windows lifecycle tests are complete, policy file saves must not be described as immediately revoking permissions in existing sessions.
 
 ## 8. Core process lifecycle
 

@@ -47,6 +47,13 @@ app.whenReady().then(() => {
     electronExecutablePath: process.execPath,
     appVersion: app.getVersion(),
     ipcMain,
+    selectDirectory: async () => {
+      const result = await dialog.showOpenDialog(mainWindow, {
+        title: "Select a workspace folder",
+        properties: ["openDirectory"]
+      });
+      return result.canceled ? null : (result.filePaths[0] ?? null);
+    },
     isTrustedSender: (event) => Boolean(
       mainWindow &&
       event.sender === mainWindow.webContents &&

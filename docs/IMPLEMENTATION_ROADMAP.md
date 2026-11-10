@@ -24,20 +24,17 @@
 - Audit events written to stderr.
 - Existing unit/security tests and GitHub Actions checks.
 - Security, contribution, versioning, changelog, and initial architecture documents.
-- Agreed seven-screen React UI prototype (demo data only).
+- Approved seven-screen React visual system bundled into Electron; Dashboard, Workspaces, Permissions, Tools, Connections, and resource limits now consume live backend state.
 
 These are repository observations, not a claim that every security property has been exhaustively proven. A dedicated Windows security review remains required.
 
 ### Not yet present
-- Production Electron desktop application and hardened preload bridge.
-- Electron app shell and process lifecycle/IPC integration (a Node-only Core process manager service is implemented, but not yet wired into Electron).
-- Implemented management IPC handlers.
-- Actual UI-driven policy editing and validation.
+- Full Windows desktop launch and end-to-end manual verification of the Electron application.
 - Persistent structured audit viewer, retention, and rotation.
-- End-to-end Electron-managed policy reload/revocation; direct client-owned stdio processes remain independently managed by their MCP clients.
+- Remaining Settings controls and diagnostics.
 - Write/create/move/rename/delete tools.
 - Workspace tree tool.
-- Production Connections/client configuration screen.
+- Full client setup guides, configuration validation, and diagnostics for supported MCP clients.
 - Git, Terminal, PowerShell, and Developer Tools modules.
 - Installer and release/update workflow.
 - Streamable HTTP transport.
@@ -94,10 +91,16 @@ Work:
 - [x] Define an immutable Core policy snapshot and explicit, revision-checked, serialized in-process reload API; filesystem operations capture one consistent snapshot per request.
 - [x] Define and implement a bounded Core-side management protocol for policy.getRevision and policy.reload over dedicated inherited pipes, separate from MCP stdin/stdout (ADR-009); unit tests cover revision handshake, successful reload, stale revision, malformed frames, and size limits.
 - [x] Activate the Core control protocol only when an explicit launcher marker is set and both inherited descriptors are verified as pipes; ordinary MCP client launches remain unchanged.
-- [x] Wire CoreProcessManager and PolicyStore into Electron main-process IPC through a named preload bridge and strict main-process validation; Windows end-to-end verification remains pending.
+- [x] Wire CoreProcessManager and PolicyStore into Electron main-process IPC through a named preload bridge and strict main-process validation.
+- [x] Bundle the approved React visual system into the Electron renderer.
+- [x] Connect Dashboard, Workspaces, Permissions, Tools, Connections, and policy-backed resource limits to real backend state.
+- [x] Add native folder selection through a narrow, main-process-owned IPC operation.
+- [x] Add a Windows CI Electron launch smoke test that verifies the React renderer, preload bridge, and backend IPC.
+- [ ] Complete manual Windows folder-selection, policy-reload, failure, and shutdown verification.
 - [ ] Define the Core tool metadata/registry contract.
 - [ ] Define the structured audit event schema, correlation IDs, retention, and redaction.
-- [ ] Complete a threat model for desktop IPC, policy writes, and Windows filesystem operations.
+- [x] Draft the desktop Electron threat model in [THREAT_MODEL_DESKTOP.md](THREAT_MODEL_DESKTOP.md).
+- [ ] Review and complete the Windows filesystem threat model and test matrix.
 
 Acceptance:
 - Contracts are implemented and validated by schemas.
@@ -147,14 +150,15 @@ Acceptance:
 
 ## Phase 5 — Connect UI to real backend
 
-**Status: Planned.**
+**Status: In progress.**
 
 Work:
-- Replace prototype data with real backend state.
-- Connect every form, action, and status display.
-- Implement policy review, save, discard, reset, and restart/reconnect feedback.
-- Implement tool inventory and capability display.
-- Implement audit filtering and diagnostics.
+- [x] Replace prototype data in the Electron renderer with real backend state.
+- [x] Connect workspace selection, policy editing, save, and Core reload feedback.
+- [x] Implement the read-only tool inventory from the current Core capabilities.
+- [x] Generate the current local stdio client configuration from actual runtime paths.
+- [ ] Implement persistent audit filtering and diagnostics.
+- [ ] Complete the remaining Settings controls and accessibility review.
 - Add loading, empty, success, denied, and error states.
 
 Acceptance:

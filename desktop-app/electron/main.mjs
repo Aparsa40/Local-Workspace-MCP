@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ElectronMainRuntime } from "../../dist-desktop/desktop-app/electron/main-runtime.js";
@@ -7,6 +7,67 @@ const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 let mainWindow;
 let runtime;
 let quitting = false;
+let smokeTimer;
+const smokeMode = process.env.CI === "true" || process.env.LWMCP_ELECTRON_SMOKE === "1" || process.argv.includes("--lwmcp-smoke-test") || app.commandLine.hasSwitch("lwmcp-smoke-test");
+
+if (smokeMode) {
+  process.stdout.write("Electron smoke mode recognized by the main process.\n");
+  smokeTimer = setTimeout(() => {
+    process.stderr.write("Electron smoke startup timed out before renderer verification.\n");
+    process.exit(1);
+  }, 30_000);
+}
+
+function finishSmoke(exitCode) {
+  if (smokeTimer) clearTimeout(smokeTimer);
+  const activeRuntime = runtime;
+  runtime = undefined;
+  const cleanupFallback = setTimeout(() => process.exit(exitCode), 5_000);
+  void Promise.resolve(activeRuntime?.dispose())
+    .catch((error) => {
+      process.stderr.write(`Electron smoke cleanup failed: ${error instanceof Error ? error.message : "unknown error"}\n`);
+    })
+    .finally(() => {
+      clearTimeout(cleanupFallback);
+      app.exit(exitCode);
+    });
+}
+
+function verifySmokeWindow(window) {
+  if (smokeTimer) clearTimeout(smokeTimer);
+  smokeTimer = setTimeout(() => {
+    process.stderr.write("Electron smoke verification timed out.\n");
+    finishSmoke(1);
+  }, 30_000);
+
+  window.webContents.once("did-fail-load", (_event, errorCode, description) => {
+    process.stderr.write(`Electron smoke renderer load failed (${errorCode}): ${description}\n`);
+    finishSmoke(1);
+  });
+
+  window.webContents.once("did-finish-load", () => {
+    const verification = `Promise.all([
+      window.localWorkspace.app.getStatus(),
+      window.localWorkspace.policy.get()
+    ]).then(([appStatus, policy]) => ({
+      rendererMounted: Boolean(document.querySelector("#root")?.childElementCount),
+      appStatus,
+      policy
+    }))`;
+
+    void window.webContents.executeJavaScript(verification).then((result) => {
+      if (!result.rendererMounted || !result.appStatus?.ok ||
+          !result.policy?.ok || result.policy.value.configured !== false) {
+        throw new Error("Renderer, preload bridge, or initial unconfigured policy check failed.");
+      }
+      process.stdout.write("Electron Windows smoke test passed: React renderer, preload IPC, and backend status are live.\n");
+      finishSmoke(0);
+    }).catch((error) => {
+      process.stderr.write(`Electron smoke verification failed: ${error instanceof Error ? error.message : "unknown error"}\n`);
+      finishSmoke(1);
+    });
+  });
+}
 
 function createMainWindow() {
   mainWindow = new BrowserWindow({
@@ -29,8 +90,9 @@ function createMainWindow() {
   // This shell does not require renderer navigation. Deny every page-initiated
   // navigation rather than trying to maintain an origin allowlist for file://.
   mainWindow.webContents.on("will-navigate", (event) => event.preventDefault());
-  mainWindow.once("ready-to-show", () => mainWindow?.show());
-  void mainWindow.loadFile(path.join(currentDirectory, "..", "index.html"));
+  mainWindow.once("ready-to-show", () => {
+    if (!smokeMode) mainWindow?.show();
+  });
   mainWindow.on("closed", () => { mainWindow = undefined; });
 
   return mainWindow;
@@ -47,13 +109,28 @@ app.whenReady().then(() => {
     electronExecutablePath: process.execPath,
     appVersion: app.getVersion(),
     ipcMain,
+    selectDirectory: async () => {
+      const result = await dialog.showOpenDialog(mainWindow, {
+        title: "Select a workspace folder",
+        properties: ["openDirectory"]
+      });
+      return result.canceled ? null : (result.filePaths[0] ?? null);
+    },
     isTrustedSender: (event) => Boolean(
       mainWindow &&
       event.sender === mainWindow.webContents &&
       event.senderFrame === mainWindow.webContents.mainFrame
     )
   });
-  createMainWindow();
+  const window = createMainWindow();
+  if (smokeMode) {
+    process.stdout.write("Electron smoke mode active.\n");
+    verifySmokeWindow(window);
+  }
+  void window.loadFile(path.join(currentDirectory, "..", "ui-dist", "index.html")).catch((error) => {
+    process.stderr.write(`Desktop renderer failed to load: ${error instanceof Error ? error.message : "unknown error"}\n`);
+    if (smokeMode) finishSmoke(1);
+  });
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow();

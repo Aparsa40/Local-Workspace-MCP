@@ -43,9 +43,9 @@ Already implemented in the repository:
 - Dedicated, bounded Core control protocol over inherited pipes, separate from MCP stdio.
 - Node-only CoreProcessManager with real child-process integration tests on Linux and Windows.
 - Versioned PolicyStore with validation, revision checks, backup/recovery, and failure-injection coverage.
-- Seven-screen React prototype (still demo-only).
+- Approved seven-screen React visual system, now bundled in Electron with initial live backend integration.
 
-Implemented in the current M1 branch (pending PR review and final CI):
+Merged to main in PR #25:
 - Electron app shell and main-process lifecycle foundation.
 - Hardened preload bridge using `contextBridge`; renderer has no Node access or generic IPC forwarding.
 - Strict, Zod-validated, allowlisted IPC handlers with invoking main-frame validation.
@@ -53,10 +53,20 @@ Implemented in the current M1 branch (pending PR review and final CI):
 - Separate persisted-policy and normalized Core-runtime revision handling; a policy is reported active only when Core confirms the derived runtime revision.
 - Persisted-but-not-applied policy handling; reload failure triggers a managed-Core stop attempt and remains reported as unapplied.
 
+Implemented in the current M1 branch (pending review and CI):
+- Bundled the approved React design into the Electron renderer.
+- Connected workspace selection to the native folder picker and PolicyStore.
+- Connected permission editing, policy save, and managed Core reload feedback.
+- Replaced demo dashboard values and tool toggles with actual Core/policy state.
+- Added actual stdio connection configuration generation from runtime paths.
+- Made an empty workspace list a valid default-deny policy.
+
 Still required to complete M1:
-- Full Windows GUI launch and end-to-end reload/failure/shutdown verification.
-- Connect the approved seven-screen React UI to the real backend operations.
-- Complete IPC threat review and Windows packaging/build smoke tests.
+- Manual Windows verification of native folder selection, policy save/reload, failure handling, and shutdown. (The CI smoke test now verifies that Electron launches the bundled React renderer and trusted preload IPC.)
+- Review and approve the desktop IPC threat model and complete the Windows filesystem security review.
+- Verify that external stdio clients remain independent of the Desktop App lifecycle.
+
+Structured persistent Activity & Audit and the remaining Settings workflows belong to the later functional-management delivery stage, not the M1 security foundation.
 
 The merged Node-only CoreProcessManager was a prerequisite; this branch adds the first Electron integration but does not complete M1.
 

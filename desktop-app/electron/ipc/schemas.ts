@@ -1,10 +1,11 @@
 import { z } from "zod";
+import { policyDocumentSchema } from "../../../src/config/policy-schema.js";
 
 const revisionSchema = z.string().regex(/^(?:[a-f0-9]{64})?$/);
 
 export const emptyPayloadSchema = z.object({}).strict();
 export const savePolicyPayloadSchema = z.object({
-  proposal: z.record(z.string(), z.unknown()),
+  proposal: policyDocumentSchema,
   expectedRevision: revisionSchema
 }).strict();
 
@@ -15,5 +16,6 @@ export const IPC_CHANNELS = {
   policyGet: "lwmcp:policy:get",
   policySave: "lwmcp:policy:save",
   coreStart: "lwmcp:core:start",
-  coreStop: "lwmcp:core:stop"
+  coreStop: "lwmcp:core:stop",
+  workspacePickDirectory: "lwmcp:workspace:pick-directory"
 } as const;

@@ -33,6 +33,7 @@ test("registers only named IPC handlers and rejects untrusted frames", async (t)
     electronExecutablePath: process.execPath,
     appVersion: "0.1.0",
     ipcMain,
+    selectDirectory: async () => path.join(directory, "selected-workspace"),
     isTrustedSender: (event) => event.sender === trustedSender && event.senderFrame === trustedFrame
   });
   t.after(() => runtime.dispose());
@@ -54,6 +55,14 @@ test("registers only named IPC handlers and rejects untrusted frames", async (t)
   const accepted = await getStatus({ sender: trustedSender, senderFrame: trustedFrame });
   assert.equal((accepted as { ok: boolean }).ok, true);
 
+  const pickDirectory = ipcMain.handlers.get(IPC_CHANNELS.workspacePickDirectory);
+  assert.ok(pickDirectory);
+  const selectedDirectory = await pickDirectory({ sender: trustedSender, senderFrame: trustedFrame });
+  assert.deepEqual(selectedDirectory, {
+    ok: true,
+    value: path.join(directory, "selected-workspace")
+  });
+
   const savePolicy = ipcMain.handlers.get(IPC_CHANNELS.policySave);
   assert.ok(savePolicy);
   const invalidPayload = await savePolicy(
@@ -61,6 +70,22 @@ test("registers only named IPC handlers and rejects untrusted frames", async (t)
     { proposal: { roots: [] }, expectedRevision: "not-a-revision", extra: true }
   );
   assert.deepEqual(invalidPayload, {
+    ok: false,
+    error: {
+      code: "INVALID_ARGUMENT",
+      message: "The request payload is invalid."
+    }
+  });
+
+
+  const invalidPolicyShape = await savePolicy(
+    { sender: trustedSender, senderFrame: trustedFrame },
+    {
+      proposal: { schemaVersion: 1, roots: [], limits: {}, unexpected: true },
+      expectedRevision: ""
+    }
+  );
+  assert.deepEqual(invalidPolicyShape, {
     ok: false,
     error: {
       code: "INVALID_ARGUMENT",

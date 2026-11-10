@@ -20,6 +20,8 @@ export interface DesktopControlServiceOptions {
   readonly policyStore: PolicyStorePort;
   readonly coreManager: CoreProcessManagerPort;
   readonly appVersion: string;
+  readonly coreEntryPath?: string;
+  readonly policyPath?: string;
 }
 
 export interface PolicyReadResult {
@@ -32,6 +34,8 @@ export interface PolicyReadResult {
 export interface DesktopAppStatus {
   readonly appVersion: string;
   readonly policyConfigured: boolean;
+  readonly coreEntryPath?: string;
+  readonly policyPath?: string;
   /** Revision of the persisted versioned desktop policy document. */
   readonly policyRevision?: string;
   readonly core: {
@@ -56,11 +60,15 @@ export class DesktopControlService {
   readonly #policyStore: PolicyStorePort;
   readonly #coreManager: CoreProcessManagerPort;
   readonly #appVersion: string;
+  readonly #coreEntryPath: string | undefined;
+  readonly #policyPath: string | undefined;
 
   constructor(options: DesktopControlServiceOptions) {
     this.#policyStore = options.policyStore;
     this.#coreManager = options.coreManager;
     this.#appVersion = options.appVersion;
+    this.#coreEntryPath = options.coreEntryPath;
+    this.#policyPath = options.policyPath;
   }
 
   async getPolicy(): Promise<PolicyReadResult> {
@@ -100,6 +108,8 @@ export class DesktopControlService {
     return {
       appVersion: this.#appVersion,
       policyConfigured: policy.configured,
+      ...(this.#coreEntryPath ? { coreEntryPath: this.#coreEntryPath } : {}),
+      ...(this.#policyPath ? { policyPath: this.#policyPath } : {}),
       ...(policy.revision ? { policyRevision: policy.revision } : {}),
       core: coreStatus
     };

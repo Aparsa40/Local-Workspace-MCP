@@ -17,5 +17,8 @@ contextBridge.exposeInMainWorld("localWorkspace", Object.freeze({
   core: Object.freeze({
     start: () => invoke("lwmcp:core:start"),
     stop: () => invoke("lwmcp:core:stop")
+  }),
+  dialog: Object.freeze({
+    selectDirectory: () => invoke("lwmcp:workspace:pick-directory")
   })
 }));

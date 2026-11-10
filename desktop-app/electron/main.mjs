@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ElectronMainRuntime } from "../../dist-desktop/desktop-app/electron/main-runtime.js";
@@ -30,7 +30,7 @@ function createMainWindow() {
   // navigation rather than trying to maintain an origin allowlist for file://.
   mainWindow.webContents.on("will-navigate", (event) => event.preventDefault());
   mainWindow.once("ready-to-show", () => mainWindow?.show());
-  void mainWindow.loadFile(path.join(currentDirectory, "..", "index.html"));
+  void mainWindow.loadFile(path.join(currentDirectory, "..", "ui-dist", "index.html"));
   mainWindow.on("closed", () => { mainWindow = undefined; });
 
   return mainWindow;

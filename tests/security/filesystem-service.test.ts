@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import type { AppConfig } from "../../src/config/config-schema.js";
 import { FilesystemService } from "../../src/modules/filesystem/filesystem-service.js";
-import { PermissionEngine } from "../../src/security/permission-engine.js";
+import { PolicyRuntime } from "../../src/security/policy-runtime.js";
 
 test("filesystem service lists and reads only explicitly permitted workspace files", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "lwmcp-files-"));
@@ -15,8 +15,8 @@ test("filesystem service lists and reads only explicitly permitted workspace fil
       roots: [{ path: root, permissions: ["list", "read", "metadata", "search"] }],
       limits: { maxFileBytes: 128, maxListEntries: 20, maxSearchResults: 10, maxSearchDepth: 2 }
     } as AppConfig;
-    const policy = await PermissionEngine.create(config);
-    const service = new FilesystemService(policy, config);
+    const runtime = await PolicyRuntime.create(config);
+    const service = new FilesystemService(runtime);
 
     const entries = await service.listFiles("");
     assert.ok(entries.some((entry) => entry.name === "hello.txt"));
@@ -36,7 +36,7 @@ test("filesystem service enforces configured read size limits", async () => {
       roots: [{ path: root, permissions: ["read"] }],
       limits: { maxFileBytes: 8, maxListEntries: 20, maxSearchResults: 10, maxSearchDepth: 2 }
     } as AppConfig;
-    const service = new FilesystemService(await PermissionEngine.create(config), config);
+    const service = new FilesystemService(await PolicyRuntime.create(config));
     await assert.rejects(service.readTextFile("large.txt"), /size limit/i);
   } finally {
     await rm(root, { recursive: true, force: true });

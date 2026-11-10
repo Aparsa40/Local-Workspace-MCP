@@ -104,3 +104,19 @@ test("does not fall back to backup when the active policy is malformed", async (
 
   await assert.rejects(f.store.load());
 });
+
+test("serializes simultaneous saves and rejects the stale contender", async (t) => {
+  const f = await fixture();
+  t.after(() => rm(f.directory, { recursive: true, force: true }));
+
+  const first = await f.store.save(proposal(f.workspace, ["list"]), "");
+  const attempts = await Promise.allSettled([
+    f.store.save(proposal(f.workspace, ["list", "read"]), first.revision),
+    f.store.save(proposal(f.workspace, ["metadata"]), first.revision)
+  ]);
+
+  assert.equal(attempts.filter((result) => result.status === "fulfilled").length, 1);
+  assert.equal(attempts.filter((result) => result.status === "rejected").length, 1);
+  const current = await f.store.load();
+  assert.notEqual(current.revision, first.revision);
+});

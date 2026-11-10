@@ -9,13 +9,13 @@ This file records decisions that materially affect product structure and integra
 - **Context:** The product must remain useful without ParsSynapse Chat or another specific MCP client.
 - **Consequences:** Desktop UI manages the product; MCP Core owns actual resource authorization. External clients can launch Core directly.
 
-## ADR-002 — Desktop UI technology
+## ADR-002 — Desktop UI and runtime technology
 
-- **Status:** Proposed; validate during prototype
-- **Decision:** Use React + TypeScript for the UI. Electron with a Node.js main process is the leading desktop runtime candidate.
-- **Context:** Existing Core is Node.js/TypeScript; code reuse and a single primary runtime reduce integration complexity.
-- **Security requirements:** context isolation enabled, renderer Node integration disabled, narrow preload bridge, validated IPC, restrictive content security policy, no arbitrary renderer-to-main method invocation.
-- **Open validation:** installer size, process lifecycle, Windows integration, accessibility, and maintainability.
+- **Status:** Accepted
+- **Decision:** Use Electron for the Windows desktop shell and main process, with React + TypeScript + Vite for the renderer.
+- **Context:** The existing MCP Core is Node.js/TypeScript. Electron lets the desktop main process reuse the Node.js ecosystem for process management, Windows filesystem operations, configuration management, and validation without adding a second native runtime.
+- **Consequences:** The renderer must run with context isolation, Node integration disabled, a narrow preload bridge, strict IPC validation, and a restrictive content security policy. Electron's runtime footprint is accepted for the first implementation and must be measured before release.
+- **Validation still required:** installer size, Windows process lifecycle, accessibility, maintainability, and dependency/security maintenance.
 
 ## ADR-003 — MCP stdio as the initial transport
 
@@ -34,7 +34,7 @@ This file records decisions that materially affect product structure and integra
 
 ## ADR-005 — Separate management plane from MCP protocol plane
 
-- **Status:** Accepted as design direction
+- **Status:** Accepted
 - **Decision:** Desktop management operations (policy editing, application settings, diagnostics, process lifecycle) use a restricted desktop IPC/control boundary. MCP tool calls remain on the MCP protocol channel.
 - **Context:** Management actions and tool invocations have different contracts and security requirements.
 - **Consequences:** Do not add an unauthenticated HTTP management API to the MCP Core. Policy writes must be validated, atomic, recoverable, and applied through a defined reload/restart strategy.
@@ -52,3 +52,10 @@ This file records decisions that materially affect product structure and integra
 - **Decision:** A Product Blueprint and supporting design/architecture/roadmap documents are required before substantial implementation begins on a new project or major product direction.
 - **Context:** Starting from an incomplete backend skeleton causes rework when the intended UI and product behavior become clear later.
 - **Consequences:** Product scope and user flows are agreed first; technical contracts are derived from them; implementation proceeds in testable phases. Changes are recorded in the project documents.
+
+## ADR-008 — Policy changes must have explicit active-session semantics
+
+- **Status:** Accepted
+- **Decision:** A policy edit is not considered effective for active Core processes merely because the policy file was replaced. Core must validate and atomically adopt a new policy snapshot, or the UI must clearly state that existing sessions retain the previous revision until restart.
+- **Context:** The current Core loads policy once at startup, while stdio clients launch independent processes. A file-only update could otherwise leave revoked permissions active in existing processes.
+- **Consequences:** Implement and test a safe Core policy reload mechanism before claiming immediate revocation. Invalid updates must not partially replace the active policy; the effective revision must be observable.

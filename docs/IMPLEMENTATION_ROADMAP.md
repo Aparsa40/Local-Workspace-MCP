@@ -24,18 +24,20 @@
 - Audit events written to stderr.
 - Existing unit/security tests and GitHub Actions checks.
 - Security, contribution, versioning, changelog, and initial architecture documents.
+- Agreed seven-screen React UI prototype (demo data only).
 
 These are repository observations, not a claim that every security property has been exhaustively proven. A dedicated Windows security review remains required.
 
 ### Not yet present
-- Desktop application and graphical management UI.
+- Production Electron desktop application and hardened preload bridge.
 - Desktop runtime / process manager.
-- Backend management API or secure IPC contract.
+- Implemented management IPC handlers.
 - Actual UI-driven policy editing and validation.
 - Persistent structured audit viewer, retention, and rotation.
+- Live policy reload/revocation for already-running stdio Core processes.
 - Write/create/move/rename/delete tools.
 - Workspace tree tool.
-- Connections/client configuration screen.
+- Production Connections/client configuration screen.
 - Git, Terminal, PowerShell, and Developer Tools modules.
 - Installer and release/update workflow.
 - Streamable HTTP transport.
@@ -60,38 +62,42 @@ Acceptance:
 
 **Status: In progress.**
 
-Initial implementation started in [`desktop-prototype/`](../desktop-prototype/). It is an interactive React + TypeScript prototype with local-only demo state; it does not connect to the MCP Core or access Windows files. The seven agreed navigation areas are represented. Visual review, interaction refinement, accessibility checks, and a dedicated build check remain open.
+Initial implementation started in [`desktop-prototype/`](../desktop-prototype/). It is an interactive React + TypeScript prototype with local-only demo state; it does not connect to the MCP Core or access Windows files. The seven agreed navigation areas are represented.
 
 Work:
 - [x] Build the desktop application shell and navigation.
 - [x] Prototype all seven screens in an interactive, demo-only React app.
-- [ ] Review the prototype visually and refine it with product-owner feedback.
+- [x] Receive product-owner confirmation that the seven-screen direction matches the target product.
+- [ ] Review the prototype visually and refine any remaining details.
 - Validate the major workflows and states in the UI/UX specification.
-- Confirm desktop runtime choice (Electron is the leading candidate).
-- Validate accessibility, keyboard use, responsive desktop layouts, and error handling.
+- [ ] Validate accessibility, keyboard use, responsive desktop layouts, and error handling.
 
 Acceptance:
 - All screens and key workflows are reviewable in a clickable prototype.
 - No mock control is mistaken for a functioning backend feature.
 - The design covers real Core states, including stdio Ready/Idle/Active distinctions.
 
-## Phase 2 — Architecture contracts and security design
+## Phase 2 — Desktop architecture contracts and security design
 
-**Status: Planned.**
+**Status: In progress.**
+
+The first desktop architecture contract is documented in [`DESKTOP_ARCHITECTURE.md`](DESKTOP_ARCHITECTURE.md). It selects Electron as the first implementation runtime and defines the process boundary, hardened renderer requirements, initial IPC API, policy persistence requirements, and the critical live-policy-revocation requirement.
 
 Work:
-- Define desktop IPC/API contracts.
-- Define versioned policy schema and migration strategy.
-- Define Core module registration contract.
-- Define tool metadata and capability mapping.
-- Define audit event schema, correlation IDs, retention, and redaction.
-- Define Core process lifecycle and stdio session model.
-- Threat-model the desktop boundary, policy writes, and Windows filesystem operations.
+- [x] Select Electron + React + TypeScript as the initial desktop implementation stack.
+- [x] Define the process boundary and renderer security baseline.
+- [x] Draft the allowlisted IPC contract.
+- [x] Document atomic policy persistence, revision checks, and active-session revocation requirements.
+- [ ] Define and implement versioned policy schemas and migrations.
+- [ ] Define and implement the Core policy snapshot reload contract.
+- [ ] Define the Core tool metadata/registry contract.
+- [ ] Define the structured audit event schema, correlation IDs, retention, and redaction.
+- [ ] Complete a threat model for desktop IPC, policy writes, and Windows filesystem operations.
 
 Acceptance:
-- Contracts are documented and validated by schemas.
+- Contracts are implemented and validated by schemas.
 - UI cannot bypass Core authorization.
-- Policy changes are atomic, recoverable, and applied predictably.
+- Policy changes are atomic, recoverable, and applied predictably to active Core processes.
 - External MCP clients can launch Core without Desktop App dependency.
 
 ## Phase 3 — Harden and complete MCP Core

@@ -94,6 +94,24 @@ test("rejects invalid roots and duplicate canonical workspace paths", async (t) 
   }, ""));
 });
 
+test("does not recover a stale backup when an active policy references a missing workspace", async (t) => {
+  const f = await fixture();
+  const replacementWorkspace = path.join(f.directory, "replacement-workspace");
+  await mkdir(replacementWorkspace);
+  t.after(() => rm(f.directory, { recursive: true, force: true }));
+
+  const first = await f.store.save(proposal(f.workspace, ["list"]), "");
+  await f.store.save(proposal(replacementWorkspace, ["read"]), first.revision);
+  await rm(replacementWorkspace, { recursive: true, force: true });
+
+  // The active policy file exists; only its configured root is missing.
+  // Recovery must not silently restore the older backup's permissions.
+  await assert.rejects(f.store.load(), (error: unknown) =>
+    typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT"
+  );
+  assert.equal(await f.store.hasStoredPolicy(), true);
+});
+
 test("does not fall back to backup when the active policy is malformed", async (t) => {
   const f = await fixture();
   t.after(() => rm(f.directory, { recursive: true, force: true }));

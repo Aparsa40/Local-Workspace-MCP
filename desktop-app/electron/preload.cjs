@@ -1,4 +1,6 @@
-// Electron sandboxed preload scripts use the restricted CommonJS require API.\n// eslint-disable-next-line @typescript-eslint/no-require-imports\nconst { contextBridge, ipcRenderer } = require("electron");
+// Electron sandboxed preload scripts use the restricted CommonJS require API.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { contextBridge, ipcRenderer } = require("electron");
 
 const invoke = (channel, payload = {}) => ipcRenderer.invoke(channel, payload);
 

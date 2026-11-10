@@ -34,9 +34,10 @@ test("publishes a complete new policy snapshot and filesystem operations use it"
   assert.notEqual(next.revision, previous.revision);
   assert.equal(runtime.getSnapshot(), next);
   await assert.rejects(filesystem.readTextFile("secret.txt"), /denied/i);
-  // A caller holding the old immutable snapshot continues to see the old revision.
+  // The old snapshot remains independently usable; use its canonical root path.
+  const oldCanonicalRoot = previous.config.roots[0]!.path;
+  assert.equal(previous.permissions.authorize(oldCanonicalRoot, "read").path, oldCanonicalRoot);
   assert.equal(previous.revision, previousRevision);
-  assert.equal(previous.permissions.authorize(f.root, "read").path, f.root);
 });
 
 test("rejects invalid reloads without replacing the active snapshot", async (t) => {

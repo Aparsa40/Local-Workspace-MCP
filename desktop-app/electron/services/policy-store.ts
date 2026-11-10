@@ -150,10 +150,6 @@ export class PolicyStore {
         previousRevision: currentRevision,
         recoveredFromBackup: false
       };
-    } catch (error) {
-      // If replacement failed after the active file was moved, restore the last backup.
-      // The normal rename path does not remove the active file before replacement.
-      throw error;
     } finally {
       if (handle) await handle.close().catch(() => undefined);
       await rm(temporaryPath, { force: true }).catch(() => undefined);

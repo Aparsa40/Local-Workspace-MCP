@@ -1,14 +1,22 @@
-import { PolicyStore, type PolicySnapshot, type SavePolicyResult } from "./policy-store.js";
-import {
-  CoreProcessManager,
-  CoreProcessManagerError,
-  type ManagedCoreStatus
-} from "./core-process-manager.js";
+import type { PolicySnapshot, SavePolicyResult } from "./policy-store.js";
 import { toAppConfig } from "../../../src/config/policy-schema.js";
+import type { ManagedCoreStatus } from "./core-process-manager.js";
+
+export interface PolicyStorePort {
+  load(): Promise<PolicySnapshot>;
+  save(proposal: unknown, expectedRevision: string): Promise<SavePolicyResult>;
+}
+
+export interface CoreProcessManagerPort {
+  getStatus(): ManagedCoreStatus;
+  start(): Promise<ManagedCoreStatus>;
+  reloadPolicy(config: unknown): Promise<string>;
+  stop(): Promise<void>;
+}
 
 export interface DesktopControlServiceOptions {
-  readonly policyStore: PolicyStore;
-  readonly coreManager: CoreProcessManager;
+  readonly policyStore: PolicyStorePort;
+  readonly coreManager: CoreProcessManagerPort;
   readonly appVersion: string;
 }
 
@@ -41,8 +49,8 @@ export interface PolicySaveResult {
 }
 
 export class DesktopControlService {
-  readonly #policyStore: PolicyStore;
-  readonly #coreManager: CoreProcessManager;
+  readonly #policyStore: PolicyStorePort;
+  readonly #coreManager: CoreProcessManagerPort;
   readonly #appVersion: string;
 
   constructor(options: DesktopControlServiceOptions) {
@@ -73,22 +81,18 @@ export class DesktopControlService {
       core.state === "running" &&
       core.revision === policy.revision;
 
-    const result: DesktopAppStatus = {
-      appVersion: this.#appVersion,
-      policyConfigured: policy.configured,
-      core: {
-        state: core.state,
-        policyApplied
-      }
+    const coreStatus: DesktopAppStatus["core"] = {
+      state: core.state,
+      policyApplied,
+      ...(core.pid !== undefined ? { pid: core.pid } : {}),
+      ...(policyApplied && core.revision ? { activeRevision: core.revision } : {})
     };
 
     return {
-      ...result,
+      appVersion: this.#appVersion,
+      policyConfigured: policy.configured,
       ...(policy.revision ? { policyRevision: policy.revision } : {}),
-      ...(core.pid !== undefined ? { core: { ...result.core, pid: core.pid } } : {}),
-      ...(policyApplied && core.revision ? {
-        core: { ...result.core, ...(core.pid !== undefined ? { pid: core.pid } : {}), activeRevision: core.revision }
-      } : {})
+      core: coreStatus
     };
   }
 
@@ -97,10 +101,7 @@ export class DesktopControlService {
     const existing = this.#coreManager.getStatus();
     if (existing.state === "running") {
       if (existing.revision !== policy.revision) {
-        throw new CoreProcessManagerError(
-          "POLICY_REVISION_MISMATCH",
-          "The running Core does not enforce the currently saved policy. Stop it before starting again."
-        );
+        throw new Error("The running Core does not enforce the saved policy. Stop it before starting again.");
       }
       return this.getStatus();
     }
@@ -108,10 +109,7 @@ export class DesktopControlService {
     const started = await this.#coreManager.start();
     if (started.revision !== policy.revision) {
       await this.#coreManager.stop().catch(() => undefined);
-      throw new CoreProcessManagerError(
-        "POLICY_REVISION_MISMATCH",
-        "Core startup revision did not match the saved policy; the process was stopped."
-      );
+      throw new Error("Core startup revision did not match the saved policy; the process was stopped.");
     }
     return this.getStatus();
   }
@@ -137,10 +135,7 @@ export class DesktopControlService {
     try {
       const activeRevision = await this.#coreManager.reloadPolicy(toAppConfig(saved.document));
       if (activeRevision !== saved.revision) {
-        throw new CoreProcessManagerError(
-          "POLICY_REVISION_MISMATCH",
-          "Core acknowledged a policy revision that differs from the persisted policy."
-        );
+        throw new Error("Core acknowledged a policy revision that differs from the persisted policy.");
       }
       return {
         configured: true,

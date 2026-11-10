@@ -106,3 +106,26 @@ test("allows an empty workspace list as a valid default-deny policy", () => {
   assert.deepEqual(result.document.roots, []);
   assert.deepEqual(toAppConfig(result.document).roots, []);
 });
+
+test("bounds workspace count, path length, and duplicate capabilities", () => {
+  assert.throws(() => parsePolicyDocument({
+    schemaVersion: 1,
+    roots: Array.from({ length: 129 }, (_, index) => ({
+      path: "C:\\Workspace-" + index,
+      permissions: []
+    })),
+    limits: {}
+  }), /Policy validation failed/);
+
+  assert.throws(() => parsePolicyDocument({
+    schemaVersion: 1,
+    roots: [{ path: "C:\\" + "x".repeat(32_768), permissions: [] }],
+    limits: {}
+  }), /Policy validation failed/);
+
+  assert.throws(() => parsePolicyDocument({
+    schemaVersion: 1,
+    roots: [{ path: "C:\\Workspace", permissions: ["list", "list"] }],
+    limits: {}
+  }), /Policy validation failed/);
+});

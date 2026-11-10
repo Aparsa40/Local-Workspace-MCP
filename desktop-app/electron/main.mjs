@@ -22,7 +22,7 @@ function finishSmoke(exitCode) {
 
 function verifySmokeWindow(window) {
   smokeTimer = setTimeout(() => {
-    process.stderr.write("Electron smoke verification timed out.\\n");
+    process.stderr.write("Electron smoke verification timed out.\n");
     finishSmoke(1);
   }, 30_000);
 

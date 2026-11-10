@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { PolicyRuntime, PolicyRuntimeRevisionConflictError } from "../../src/security/policy-runtime.js";
@@ -34,8 +34,8 @@ test("publishes a complete new policy snapshot and filesystem operations use it"
   assert.notEqual(next.revision, previous.revision);
   assert.equal(runtime.getSnapshot(), next);
   await assert.rejects(filesystem.readTextFile("secret.txt"), /denied/i);
-  // The old snapshot remains independently usable; use its canonical root path.
-  const oldCanonicalRoot = previous.config.roots[0]!.path;
+  // PermissionEngine stores realpath-normalized roots; query it with that same path.
+  const oldCanonicalRoot = await realpath(f.root);
   assert.equal(previous.permissions.authorize(oldCanonicalRoot, "read").path, oldCanonicalRoot);
   assert.equal(previous.revision, previousRevision);
 });

@@ -77,6 +77,22 @@ test("registers only named IPC handlers and rejects untrusted frames", async (t)
     }
   });
 
+
+  const invalidPolicyShape = await savePolicy(
+    { sender: trustedSender, senderFrame: trustedFrame },
+    {
+      proposal: { schemaVersion: 1, roots: [], limits: {}, unexpected: true },
+      expectedRevision: ""
+    }
+  );
+  assert.deepEqual(invalidPolicyShape, {
+    ok: false,
+    error: {
+      code: "INVALID_ARGUMENT",
+      message: "The request payload is invalid."
+    }
+  });
+
   await runtime.dispose();
   assert.equal(ipcMain.handlers.size, 0);
 });

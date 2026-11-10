@@ -79,7 +79,6 @@ function createMainWindow() {
   mainWindow.once("ready-to-show", () => {
     if (process.env.LWMCP_ELECTRON_SMOKE !== "1") mainWindow?.show();
   });
-  void mainWindow.loadFile(path.join(currentDirectory, "..", "ui-dist", "index.html"));
   mainWindow.on("closed", () => { mainWindow = undefined; });
 
   return mainWindow;
@@ -113,6 +112,10 @@ app.whenReady().then(() => {
   if (process.env.LWMCP_ELECTRON_SMOKE === "1") {
     verifySmokeWindow(window);
   }
+  void window.loadFile(path.join(currentDirectory, "..", "ui-dist", "index.html")).catch((error) => {
+    process.stderr.write(`Desktop renderer failed to load: ${error instanceof Error ? error.message : "unknown error"}\\n`);
+    if (process.env.LWMCP_ELECTRON_SMOKE === "1") finishSmoke(1);
+  });
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow();

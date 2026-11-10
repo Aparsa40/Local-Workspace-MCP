@@ -216,9 +216,19 @@ function App() {
     }
   }
 
-  async function saveLimits(field: keyof PolicyDocument["limits"], value: string) {
+  function saveLimits(field: keyof PolicyDocument["limits"], value: string) {
     const parsed = Number(value);
-    if (!Number.isInteger(parsed) || parsed < 0) return;
+    const bounds: Record<keyof PolicyDocument["limits"], { min: number; max: number }> = {
+      maxFileBytes: { min: 1, max: 10_485_760 },
+      maxListEntries: { min: 1, max: 2_000 },
+      maxSearchResults: { min: 1, max: 500 },
+      maxSearchDepth: { min: 0, max: 10 }
+    };
+    if (!Number.isInteger(parsed) || parsed < bounds[field].min || parsed > bounds[field].max) {
+      setError(`${field} must be between ${bounds[field].min} and ${bounds[field].max}.`);
+      return;
+    }
+    setError("");
     setDraft((current) => ({ ...current, limits: { ...current.limits, [field]: parsed } }));
   }
 

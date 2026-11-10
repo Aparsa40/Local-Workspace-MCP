@@ -95,10 +95,12 @@ Work:
 - [x] Bundle the approved React visual system into the Electron renderer.
 - [x] Connect Dashboard, Workspaces, Permissions, Tools, Connections, and policy-backed resource limits to real backend state.
 - [x] Add native folder selection through a narrow, main-process-owned IPC operation.
-- [ ] Complete Windows desktop launch and manual end-to-end verification.
+- [x] Add a Windows CI Electron launch smoke test that verifies the React renderer, preload bridge, and backend IPC.
+- [ ] Complete manual Windows folder-selection, policy-reload, failure, and shutdown verification.
 - [ ] Define the Core tool metadata/registry contract.
 - [ ] Define the structured audit event schema, correlation IDs, retention, and redaction.
-- [ ] Complete a threat model for desktop IPC, policy writes, and Windows filesystem operations.
+- [x] Draft the desktop Electron threat model in [THREAT_MODEL_DESKTOP.md](THREAT_MODEL_DESKTOP.md).
+- [ ] Review and complete the Windows filesystem threat model and test matrix.
 
 Acceptance:
 - Contracts are implemented and validated by schemas.

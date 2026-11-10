@@ -11,6 +11,7 @@ import {
 
 interface IpcEventLike {
   readonly sender: unknown;
+  readonly senderFrame?: unknown;
 }
 
 interface IpcMainLike {
@@ -43,14 +44,12 @@ interface IpcSuccess<T> {
   readonly value: T;
 }
 
-type IpcResult<T> = IpcSuccess<T> | IpcFailure;
-
 const channels = Object.values(IPC_CHANNELS);
 
 export class ElectronMainRuntime {
   readonly #ipcMain: IpcMainLike;
   readonly #service: DesktopControlService;
-  readonly #isTrustedSender: (sender: unknown) => boolean;
+  readonly #isTrustedSender: (event: IpcEventLike) => boolean;
 
   constructor(options: ElectronMainRuntimeOptions) {
     if (!path.isAbsolute(options.appDataPath) || !path.isAbsolute(options.coreEntryPath) ||
@@ -108,10 +107,7 @@ export class ElectronMainRuntime {
       try {
         return success(await action(parsed.data));
       } catch (error) {
-        return failure(
-          getErrorCode(error),
-          getSafeErrorMessage(error)
-        );
+        return failure(getErrorCode(error), getSafeErrorMessage(error));
       }
     });
   }

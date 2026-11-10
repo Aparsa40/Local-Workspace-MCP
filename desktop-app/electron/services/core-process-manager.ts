@@ -163,6 +163,10 @@ export class CoreProcessManager {
     child.stderr?.on("data", (chunk: Buffer) => this.#captureStderr(chunk));
     this.#controlOutput.on("data", (chunk: Buffer) => this.#consumeControlData(chunk));
     this.#controlOutput.on("error", () => this.#failControlChannel());
+    this.#controlOutput.on("end", () => {
+      if (this.#state === "starting" || this.#state === "running") this.#failControlChannel();
+    });
+    this.#controlInput.on("error", () => this.#failControlChannel());
 
     child.once("exit", (code, signal) => {
       this.#state = this.#state === "stopping" ? "stopped" : "failed";
@@ -240,7 +244,11 @@ export class CoreProcessManager {
     const exited = await this.#waitForExit(child, this.#options.stopTimeoutMs);
     if (!exited) {
       child.kill();
-      await this.#waitForExit(child, this.#options.stopTimeoutMs);
+      const killed = await this.#waitForExit(child, this.#options.stopTimeoutMs);
+      if (!killed) {
+        this.#state = "failed";
+        throw new CoreProcessManagerError("STOP_TIMEOUT", "The managed Core process did not exit after termination.");
+      }
     }
     this.#rejectPending(new CoreProcessManagerError("PROCESS_STOPPED", "The managed Core process was stopped."));
     this.#state = "stopped";

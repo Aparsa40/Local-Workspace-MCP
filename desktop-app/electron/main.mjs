@@ -11,9 +11,9 @@ let smokeTimer;
 const smokeMode = process.env.CI === "true" || process.env.LWMCP_ELECTRON_SMOKE === "1" || process.argv.includes("--lwmcp-smoke-test") || app.commandLine.hasSwitch("lwmcp-smoke-test");
 
 if (smokeMode) {
-  process.stdout.write("Electron smoke mode recognized by the main process.\\n");
+  process.stdout.write("Electron smoke mode recognized by the main process.\n");
   smokeTimer = setTimeout(() => {
-    process.stderr.write("Electron smoke startup timed out before renderer verification.\\n");
+    process.stderr.write("Electron smoke startup timed out before renderer verification.\n");
     process.exit(1);
   }, 30_000);
 }

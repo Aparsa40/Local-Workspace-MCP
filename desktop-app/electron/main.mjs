@@ -113,7 +113,7 @@ app.whenReady().then(() => {
     verifySmokeWindow(window);
   }
   void window.loadFile(path.join(currentDirectory, "..", "ui-dist", "index.html")).catch((error) => {
-    process.stderr.write(`Desktop renderer failed to load: ${error instanceof Error ? error.message : "unknown error"}\\n`);
+    process.stderr.write(`Desktop renderer failed to load: ${error instanceof Error ? error.message : "unknown error"}\n`);
     if (process.env.LWMCP_ELECTRON_SMOKE === "1") finishSmoke(1);
   });
 

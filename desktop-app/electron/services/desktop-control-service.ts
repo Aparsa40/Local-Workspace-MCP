@@ -1,5 +1,6 @@
+import { createHash } from "node:crypto";
 import type { PolicySnapshot, SavePolicyResult } from "./policy-store.js";
-import { toAppConfig } from "../../../src/config/policy-schema.js";
+import { toAppConfig, type PolicyDocument } from "../../../src/config/policy-schema.js";
 import type { ManagedCoreStatus } from "./core-process-manager.js";
 
 export interface PolicyStorePort {
@@ -30,10 +31,12 @@ export interface PolicyReadResult {
 export interface DesktopAppStatus {
   readonly appVersion: string;
   readonly policyConfigured: boolean;
+  /** Revision of the persisted versioned desktop policy document. */
   readonly policyRevision?: string;
   readonly core: {
     readonly state: ManagedCoreStatus["state"];
     readonly pid?: number;
+    /** Revision reported by Core after parsing the runtime AppConfig. */
     readonly activeRevision?: string;
     readonly policyApplied: boolean;
   };
@@ -77,9 +80,12 @@ export class DesktopControlService {
   async getStatus(): Promise<DesktopAppStatus> {
     const policy = await this.getPolicy();
     const core = this.#coreManager.getStatus();
-    const policyApplied = policy.configured &&
-      core.state === "running" &&
-      core.revision === policy.revision;
+    const expectedCoreRevision = policy.document
+      ? getCorePolicyRevision(policy.document)
+      : undefined;
+    const policyApplied = core.state === "running" &&
+      expectedCoreRevision !== undefined &&
+      core.revision === expectedCoreRevision;
 
     const coreStatus: DesktopAppStatus["core"] = {
       state: core.state,
@@ -98,16 +104,17 @@ export class DesktopControlService {
 
   async startCore(): Promise<DesktopAppStatus> {
     const policy = await this.#policyStore.load();
+    const expectedCoreRevision = getCorePolicyRevision(policy.document);
     const existing = this.#coreManager.getStatus();
     if (existing.state === "running") {
-      if (existing.revision !== policy.revision) {
+      if (existing.revision !== expectedCoreRevision) {
         throw new Error("The running Core does not enforce the saved policy. Stop it before starting again.");
       }
       return this.getStatus();
     }
 
     const started = await this.#coreManager.start();
-    if (started.revision !== policy.revision) {
+    if (started.revision !== expectedCoreRevision) {
       await this.#coreManager.stop().catch(() => undefined);
       throw new Error("Core startup revision did not match the saved policy; the process was stopped.");
     }
@@ -121,6 +128,7 @@ export class DesktopControlService {
 
   async savePolicy(proposal: unknown, expectedRevision: string): Promise<PolicySaveResult> {
     const saved: SavePolicyResult = await this.#policyStore.save(proposal, expectedRevision);
+    const expectedCoreRevision = getCorePolicyRevision(saved.document);
     const running = this.#coreManager.getStatus();
 
     if (running.state !== "running") {
@@ -134,8 +142,8 @@ export class DesktopControlService {
 
     try {
       const activeRevision = await this.#coreManager.reloadPolicy(toAppConfig(saved.document));
-      if (activeRevision !== saved.revision) {
-        throw new Error("Core acknowledged a policy revision that differs from the persisted policy.");
+      if (activeRevision !== expectedCoreRevision) {
+        throw new Error("Core acknowledged a policy revision that differs from the normalized saved policy.");
       }
       return {
         configured: true,
@@ -161,6 +169,17 @@ export class DesktopControlService {
   async dispose(): Promise<void> {
     await this.#coreManager.stop();
   }
+}
+
+/**
+ * Match PolicyRuntime's SHA-256 revision domain exactly: it hashes the
+ * normalized, unversioned AppConfig JSON, not the versioned desktop document.
+ */
+export function getCorePolicyRevision(document: PolicyDocument): string {
+  const normalizedConfig = toAppConfig(document);
+  return createHash("sha256")
+    .update(JSON.stringify(normalizedConfig), "utf8")
+    .digest("hex");
 }
 
 function isMissingFile(error: unknown): boolean {

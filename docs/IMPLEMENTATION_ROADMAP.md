@@ -81,14 +81,15 @@ Acceptance:
 
 **Status: In progress.**
 
-The first desktop architecture contract is documented in [`DESKTOP_ARCHITECTURE.md`](DESKTOP_ARCHITECTURE.md). It selects Electron as the first implementation runtime and defines the process boundary, hardened renderer requirements, initial IPC API, policy persistence requirements, and the critical live-policy-revocation requirement.
+The first versioned policy document contract is implemented in Core configuration code; legacy unversioned configuration remains readable and is normalized in memory. The first desktop architecture contract is documented in [`DESKTOP_ARCHITECTURE.md`](DESKTOP_ARCHITECTURE.md). It selects Electron as the first implementation runtime and defines the process boundary, hardened renderer requirements, initial IPC API, policy persistence requirements, and the critical live-policy-revocation requirement.
 
 Work:
 - [x] Select Electron + React + TypeScript as the initial desktop implementation stack.
 - [x] Define the process boundary and renderer security baseline.
 - [x] Draft the allowlisted IPC contract.
 - [x] Document atomic policy persistence, revision checks, and active-session revocation requirements.
-- [ ] Define and implement versioned policy schemas and migrations.
+- [x] Define a version 1 policy document schema and in-memory migration from the legacy unversioned Core config.
+- [ ] Add persistent migration, atomic save, revision checks, and backup/recovery in the desktop policy store.
 - [ ] Define and implement the Core policy snapshot reload contract.
 - [ ] Define the Core tool metadata/registry contract.
 - [ ] Define the structured audit event schema, correlation IDs, retention, and redaction.

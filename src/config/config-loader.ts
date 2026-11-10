@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { appConfigSchema, type AppConfig } from "./config-schema.js";
+import { parsePolicyDocument, toAppConfig } from "./policy-schema.js";
+import type { AppConfig } from "./config-schema.js";
 
 export async function loadConfig(configPath = process.env.LWMCP_CONFIG ?? path.resolve("config/permissions.json")): Promise<AppConfig> {
   let raw: string;
@@ -17,16 +18,14 @@ export async function loadConfig(configPath = process.env.LWMCP_CONFIG ?? path.r
     throw new Error("Configuration file contains invalid JSON.");
   }
 
-  const result = appConfigSchema.safeParse(parsed);
-  if (!result.success) {
-    throw new Error(`Configuration validation failed: ${result.error.issues.map((issue) => issue.message).join("; ")}`);
-  }
+  const { document } = parsePolicyDocument(parsed);
+  const config = toAppConfig(document);
 
-  for (const root of result.data.roots) {
+  for (const root of config.roots) {
     if (!path.isAbsolute(root.path)) {
       throw new Error("Every configured workspace root must be an absolute path.");
     }
   }
 
-  return result.data;
+  return config;
 }

@@ -13,14 +13,14 @@ function finishSmoke(exitCode) {
   runtime = undefined;
   void Promise.resolve(activeRuntime?.dispose())
     .catch((error) => {
-      process.stderr.write(`Electron smoke cleanup failed: ${error instanceof Error ? error.message : "unknown error"}\\n`);
+      process.stderr.write(`Electron smoke cleanup failed: ${error instanceof Error ? error.message : "unknown error"}\n`);
     })
     .finally(() => app.exit(exitCode));
 }
 
 function verifySmokeWindow(window) {
   window.webContents.once("did-fail-load", (_event, errorCode, description) => {
-    process.stderr.write(`Electron smoke renderer load failed (${errorCode}): ${description}\\n`);
+    process.stderr.write(`Electron smoke renderer load failed (${errorCode}): ${description}\n`);
     finishSmoke(1);
   });
 
@@ -39,10 +39,10 @@ function verifySmokeWindow(window) {
           !result.policy?.ok || result.policy.value.configured !== false) {
         throw new Error("Renderer, preload bridge, or initial unconfigured policy check failed.");
       }
-      process.stdout.write("Electron Windows smoke test passed: React renderer, preload IPC, and backend status are live.\\n");
+      process.stdout.write("Electron Windows smoke test passed: React renderer, preload IPC, and backend status are live.\n");
       finishSmoke(0);
     }).catch((error) => {
-      process.stderr.write(`Electron smoke verification failed: ${error instanceof Error ? error.message : "unknown error"}\\n`);
+      process.stderr.write(`Electron smoke verification failed: ${error instanceof Error ? error.message : "unknown error"}\n`);
       finishSmoke(1);
     });
   });

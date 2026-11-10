@@ -93,6 +93,7 @@ Work:
 - [x] Verify deterministic policy replacement-failure recovery and retry behavior in Linux and Windows CI (PR #18). This is targeted fault-injection coverage, not a guarantee against power loss or every filesystem failure.
 - [x] Define an immutable Core policy snapshot and explicit, revision-checked, serialized in-process reload API; filesystem operations capture one consistent snapshot per request.
 - [x] Define and implement a bounded Core-side management protocol for policy reload over dedicated inherited pipes, separate from MCP stdin/stdout (ADR-009); unit tests cover success, stale revision, malformed frames, and size limits.
+- [x] Activate the Core control protocol only when an explicit launcher marker is set and both inherited descriptors are verified as pipes; ordinary MCP client launches remain unchanged.
 - [ ] Attach the protocol to Electron-main-owned child-process pipes and integrate policy-store saves with Core reload; no end-to-end desktop control path is enabled yet.
 - [ ] Define the Core tool metadata/registry contract.
 - [ ] Define the structured audit event schema, correlation IDs, retention, and redaction.

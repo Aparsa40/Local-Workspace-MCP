@@ -100,8 +100,8 @@ export class PolicyStore {
     let hasCurrent = false;
     try {
       const current = await readFile(this.#filePath, "utf8");
-      const parsed = parsePolicyDocument(JSON.parse(current) as unknown);
-      currentRevision = this.#revision(serializePolicyDocument(parsed.document));
+      const currentDocument = await this.#readValidated(this.#filePath);
+      currentRevision = this.#revision(serializePolicyDocument(currentDocument));
       hasCurrent = true;
     } catch (error) {
       if (!this.#isMissingFile(error)) throw error;
@@ -193,7 +193,7 @@ export class PolicyStore {
   async #readValidated(filePath: string): Promise<PolicyDocument> {
     const raw = await readFile(filePath, "utf8");
     const parsed: unknown = JSON.parse(raw);
-    return parsePolicyDocument(parsed).document;
+    return this.#validateWorkspaceRoots(parsePolicyDocument(parsed).document);
   }
 
   #snapshot(document: PolicyDocument, recoveredFromBackup: boolean): PolicySnapshot {

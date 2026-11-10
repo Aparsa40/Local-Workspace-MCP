@@ -89,7 +89,8 @@ Work:
 - [x] Draft the allowlisted IPC contract.
 - [x] Document atomic policy persistence, revision checks, and active-session revocation requirements.
 - [x] Define a version 1 policy document schema and in-memory migration from the legacy unversioned Core config.
-- [ ] Add persistent migration, atomic save, revision checks, and backup/recovery in the desktop policy store.
+- [x] Add a Node-only desktop policy-store module with versioned schema validation, canonical existing-directory checks, same-directory temporary writes, previous-policy backup, SHA-256 revisions, and stale-write rejection.
+- [ ] Verify Windows replacement/recovery behavior in CI and add crash/fault-injection coverage before treating persistence as production-ready.
 - [ ] Define and implement the Core policy snapshot reload contract.
 - [ ] Define the Core tool metadata/registry contract.
 - [ ] Define the structured audit event schema, correlation IDs, retention, and redaction.

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { PolicyRuntime, PolicyRuntimeRevisionConflictError } from "../../src/security/policy-runtime.js";
@@ -22,6 +22,7 @@ test("publishes a complete new policy snapshot and filesystem operations use it"
   const runtime = await PolicyRuntime.create(f.config);
   const filesystem = new FilesystemService(runtime);
   const previous = runtime.getSnapshot();
+  const previousRevision = previous.revision;
 
   assert.equal(await filesystem.readTextFile("secret.txt"), "secret");
   const nextConfig = {
@@ -34,7 +35,8 @@ test("publishes a complete new policy snapshot and filesystem operations use it"
   assert.equal(runtime.getSnapshot(), next);
   await assert.rejects(filesystem.readTextFile("secret.txt"), /denied/i);
   // A caller holding the old immutable snapshot continues to see the old revision.
-  assert.equal(previous.revision, runtime.getSnapshot() === previous ? previous.revision : previous.revision);
+  assert.equal(previous.revision, previousRevision);
+  assert.equal(previous.permissions.authorize(f.root, "read").path, f.root);
 });
 
 test("rejects invalid reloads without replacing the active snapshot", async (t) => {

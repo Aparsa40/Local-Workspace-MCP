@@ -92,7 +92,8 @@ Work:
 - [x] Add a Node-only desktop policy-store module with versioned schema validation, canonical existing-directory checks, same-directory temporary writes, previous-policy backup, SHA-256 revisions, and stale-write rejection.
 - [x] Verify deterministic policy replacement-failure recovery and retry behavior in Linux and Windows CI (PR #18). This is targeted fault-injection coverage, not a guarantee against power loss or every filesystem failure.
 - [x] Define an immutable Core policy snapshot and explicit, revision-checked, serialized in-process reload API; filesystem operations capture one consistent snapshot per request.
-- [ ] Connect the reload API to a trusted desktop management/control path or a separately reviewed file-change signal; no file watcher or external reload channel is enabled yet.
+- [x] Define and implement a bounded Core-side management protocol for policy reload over dedicated inherited pipes, separate from MCP stdin/stdout (ADR-009); unit tests cover success, stale revision, malformed frames, and size limits.
+- [ ] Attach the protocol to Electron-main-owned child-process pipes and integrate policy-store saves with Core reload; no end-to-end desktop control path is enabled yet.
 - [ ] Define the Core tool metadata/registry contract.
 - [ ] Define the structured audit event schema, correlation IDs, retention, and redaction.
 - [ ] Complete a threat model for desktop IPC, policy writes, and Windows filesystem operations.

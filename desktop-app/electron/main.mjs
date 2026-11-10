@@ -111,7 +111,7 @@ app.whenReady().then(() => {
   });
   const window = createMainWindow();
   if (smokeMode) {
-    process.stdout.write("Electron smoke mode active.\\n");
+    process.stdout.write("Electron smoke mode active.\n");
     verifySmokeWindow(window);
   }
   void window.loadFile(path.join(currentDirectory, "..", "ui-dist", "index.html")).catch((error) => {

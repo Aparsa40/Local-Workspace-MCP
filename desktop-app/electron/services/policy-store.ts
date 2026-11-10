@@ -29,6 +29,13 @@ export interface SavePolicyResult extends PolicySnapshot {
 export interface PolicyStoreOptions {
   readonly filePath: string;
   readonly backupPath?: string;
+  readonly fileOperations?: Partial<PolicyStoreFileOperations>;
+}
+
+/** Narrow filesystem seam used to exercise persistence failures deterministically. */
+export interface PolicyStoreFileOperations {
+  readonly copyFile: typeof copyFile;
+  readonly rename: typeof rename;
 }
 
 export class PolicyRevisionConflictError extends Error {
@@ -42,12 +49,17 @@ export class PolicyStore {
   readonly #filePath: string;
   readonly #backupPath: string;
   #saveTail: Promise<void> = Promise.resolve();
+  readonly #fileOperations: PolicyStoreFileOperations;
 
   constructor(options: PolicyStoreOptions) {
     if (!path.isAbsolute(options.filePath)) {
       throw new Error("Policy file path must be absolute.");
     }
     this.#filePath = path.resolve(options.filePath);
+    this.#fileOperations = {
+      copyFile: options.fileOperations?.copyFile ?? copyFile,
+      rename: options.fileOperations?.rename ?? rename
+    };
     this.#backupPath = path.resolve(options.backupPath ?? `${this.#filePath}.bak`);
     if (this.#backupPath === this.#filePath) {
       throw new Error("Policy backup path must differ from the active policy path.");
@@ -123,19 +135,19 @@ export class PolicyStore {
 
       if (hasCurrent) {
         await mkdir(path.dirname(this.#backupPath), { recursive: true });
-        await copyFile(this.#filePath, backupTemporaryPath);
+        await this.#fileOperations.copyFile(this.#filePath, backupTemporaryPath);
         const backupHandle = await open(backupTemporaryPath, "r+");
         try {
           await backupHandle.sync();
         } finally {
           await backupHandle.close();
         }
-        await rename(backupTemporaryPath, this.#backupPath);
+        await this.#fileOperations.rename(backupTemporaryPath, this.#backupPath);
       }
 
       // Same-directory rename keeps the replacement on the same volume.
       // Node uses the platform's rename primitive; Windows behavior is covered by CI.
-      await rename(temporaryPath, this.#filePath);
+      await this.#fileOperations.rename(temporaryPath, this.#filePath);
 
       const saved = await this.#readValidated(this.#filePath);
       const savedRevision = this.#revision(serializePolicyDocument(saved));

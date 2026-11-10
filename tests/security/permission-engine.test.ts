@@ -42,3 +42,11 @@ test("the most specific configured root controls its subtree", async () => {
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("an empty workspace policy denies every filesystem capability", async () => {
+  const engine = await PermissionEngine.create({
+    roots: [],
+    limits: { maxFileBytes: 1024, maxListEntries: 20, maxSearchResults: 10, maxSearchDepth: 2 }
+  });
+  assert.throws(() => engine.authorize(path.resolve("outside"), "list"), /denied/i);
+});

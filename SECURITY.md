@@ -41,6 +41,10 @@ The following are design requirements, not a claim that every control is already
 - **Transport security:** keep `stdio` as the initial local transport. Any future network transport requires authentication, authorization, and network exposure restrictions.
 - **Module isolation:** future Git, shell, PowerShell, and developer-tool capabilities must use separate policies and must not inherit filesystem permissions automatically.
 
+## Desktop application threat model
+
+The Electron renderer, preload bridge, main-process IPC, policy persistence, and managed Core process boundaries are documented in [docs/THREAT_MODEL_DESKTOP.md](docs/THREAT_MODEL_DESKTOP.md). The threat model records implemented controls separately from residual risks and required Windows verification.
+
 ## Deployment guidance
 
 - Do not run the server as Administrator.

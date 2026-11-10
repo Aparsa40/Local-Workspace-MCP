@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, rm, unlink, writeFile } from "node:fs/promises";
+import { copyFile, mkdtemp, mkdir, readFile, rename, rm, unlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {
@@ -119,4 +119,44 @@ test("serializes simultaneous saves and rejects the stale contender", async (t) 
   assert.equal(attempts.filter((result) => result.status === "rejected").length, 1);
   const current = await f.store.load();
   assert.notEqual(current.revision, first.revision);
+});
+
+
+test("keeps the active policy intact when replacement fails and can retry safely", async (t) => {
+  const f = await fixture();
+  t.after(() => rm(f.directory, { recursive: true, force: true }));
+
+  const activePath = path.join(f.directory, "app", "policy.json");
+  let failActiveReplacement = true;
+  const resilientStore = new PolicyStore({
+    filePath: activePath,
+    fileOperations: {
+      copyFile,
+      rename: async (source, destination) => {
+        if (destination === activePath && failActiveReplacement) {
+          failActiveReplacement = false;
+          throw Object.assign(new Error("Simulated replacement failure"), { code: "EIO" });
+        }
+        await rename(source, destination);
+      }
+    }
+  });
+
+  const first = await resilientStore.save(proposal(f.workspace, ["list"]), "");
+  await assert.rejects(
+    resilientStore.save(proposal(f.workspace, ["list", "read"]), first.revision),
+    /Simulated replacement failure/
+  );
+
+  // The failed replace must not destroy the active policy or its backup.
+  assert.equal((await resilientStore.load()).revision, first.revision);
+  const backup = JSON.parse(await readFile(`${activePath}.bak`, "utf8")) as {
+    roots: Array<{ permissions: string[] }>;
+  };
+  assert.deepEqual(backup.roots[0]?.permissions, ["list"]);
+
+  // Retry also replaces an existing backup file, which is important on Windows.
+  const second = await resilientStore.save(proposal(f.workspace, ["list", "read"]), first.revision);
+  assert.notEqual(second.revision, first.revision);
+  assert.equal((await resilientStore.load()).revision, second.revision);
 });

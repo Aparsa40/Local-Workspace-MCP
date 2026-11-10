@@ -34,7 +34,7 @@ These are repository observations, not a claim that every security property has 
 - Implemented management IPC handlers.
 - Actual UI-driven policy editing and validation.
 - Persistent structured audit viewer, retention, and rotation.
-- Live policy reload/revocation for already-running stdio Core processes.
+- End-to-end Electron-managed policy reload/revocation; direct client-owned stdio processes remain independently managed by their MCP clients.
 - Write/create/move/rename/delete tools.
 - Workspace tree tool.
 - Production Connections/client configuration screen.

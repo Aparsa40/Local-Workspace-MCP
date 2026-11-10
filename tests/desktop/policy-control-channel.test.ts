@@ -72,7 +72,7 @@ test("returns the active Core revision over the management channel", async (t) =
     requestId: randomUUID(),
     method: "policy.getRevision",
     params: {}
-  })}\\n`);
+  })}\n`);
   await channel.done;
 
   const response = JSON.parse(channel.frames.join("").trim()) as {

@@ -6,7 +6,7 @@ export const appConfigSchema = z.object({
   roots: z.array(z.object({
     path: z.string().min(1),
     permissions: z.array(capabilitySchema)
-  }).strict()).min(1),
+  }).strict()),
   limits: z.object({
     maxFileBytes: z.number().int().positive().max(10_485_760).default(1_048_576),
     maxListEntries: z.number().int().positive().max(2_000).default(500),

@@ -34,6 +34,7 @@ A policy is shown as active only after the managed Core confirms the matching ru
 - Preload exposes named operations only; it does not expose `ipcRenderer` or generic channel invocation.
 - Main-process handlers validate payloads and verify the invoking WebContents and main frame.
 - Native folder selection is performed in the Electron main process.
+- Windows CI launches Electron in smoke mode and verifies that the bundled React renderer, restricted preload bridge, and initial main-process status/policy IPC all work.
 - The Core child is launched without a shell, with MCP stdio separate from its inherited policy-control pipes.
 - No unauthenticated network management endpoint is exposed.
 

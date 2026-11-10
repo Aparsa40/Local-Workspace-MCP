@@ -1,20 +1,21 @@
 import { open, opendir, stat } from "node:fs/promises";
 import path from "node:path";
-import type { AppConfig, Capability } from "../../config/config-schema.js";
-import type { PermissionEngine } from "../../security/permission-engine.js";
+import type { Capability } from "../../config/config-schema.js";
+import type { PolicyRuntime, PolicyRuntimeSnapshot } from "../../security/policy-runtime.js";
 import { resolveExistingPath } from "../../security/path-validator.js";
 
 export class FilesystemService {
-  constructor(
-    private readonly policy: PermissionEngine,
-    private readonly config: AppConfig
-  ) {}
+  constructor(private readonly runtime: PolicyRuntime) {}
 
-  private async resolve(relativePath: string, capability: Capability): Promise<{ target: string; root: string }> {
-    for (const configuredRoot of this.config.roots) {
+  private async resolve(
+    relativePath: string,
+    capability: Capability,
+    snapshot: PolicyRuntimeSnapshot
+  ): Promise<{ target: string; root: string }> {
+    for (const configuredRoot of snapshot.config.roots) {
       try {
         const target = await resolveExistingPath(configuredRoot.path, relativePath);
-        const authorized = this.policy.authorize(target, capability);
+        const authorized = snapshot.permissions.authorize(target, capability);
         return { target, root: authorized.path };
       } catch (error) {
         if (error instanceof Error && error.message === "Access denied by workspace policy.") {
@@ -26,11 +27,16 @@ export class FilesystemService {
     throw new Error("Requested resource is unavailable or not authorized.");
   }
 
-  private async isChildAllowed(root: string, absolutePath: string, capability: Capability): Promise<boolean> {
+  private async isChildAllowed(
+    root: string,
+    absolutePath: string,
+    capability: Capability,
+    snapshot: PolicyRuntimeSnapshot
+  ): Promise<boolean> {
     try {
       const relative = path.relative(root, absolutePath);
       const canonical = await resolveExistingPath(root, relative);
-      this.policy.authorize(canonical, capability);
+      snapshot.permissions.authorize(canonical, capability);
       return true;
     } catch {
       // Do not disclose entries belonging to a more-restricted root or outside the workspace.
@@ -39,15 +45,16 @@ export class FilesystemService {
   }
 
   async listFiles(relativePath: string): Promise<Array<{ name: string; type: "file" | "directory" | "other" }>> {
-    const { target, root } = await this.resolve(relativePath, "list");
+    const snapshot = this.runtime.getSnapshot();
+    const { target, root } = await this.resolve(relativePath, "list", snapshot);
     const visible: Array<{ name: string; type: "file" | "directory" | "other" }> = [];
     const directory = await opendir(target);
 
     for await (const entry of directory) {
-      if (visible.length >= this.config.limits.maxListEntries) break;
+      if (visible.length >= snapshot.config.limits.maxListEntries) break;
       if (entry.isSymbolicLink()) continue;
       const absolute = path.join(target, entry.name);
-      if (!(await this.isChildAllowed(root, absolute, "list"))) continue;
+      if (!(await this.isChildAllowed(root, absolute, "list", snapshot))) continue;
       visible.push({
         name: entry.name,
         type: entry.isFile() ? "file" : entry.isDirectory() ? "directory" : "other"
@@ -58,16 +65,17 @@ export class FilesystemService {
   }
 
   async readTextFile(relativePath: string): Promise<string> {
-    const { target } = await this.resolve(relativePath, "read");
+    const snapshot = this.runtime.getSnapshot();
+    const { target } = await this.resolve(relativePath, "read", snapshot);
     const handle = await open(target, "r");
     try {
       const details = await handle.stat();
       if (!details.isFile()) throw new Error("Requested resource is not a regular file.");
-      if (details.size > this.config.limits.maxFileBytes) throw new Error("File exceeds the configured size limit.");
+      if (details.size > snapshot.config.limits.maxFileBytes) throw new Error("File exceeds the configured size limit.");
 
       const chunks: Buffer[] = [];
       let totalBytes = 0;
-      const maxBytes = this.config.limits.maxFileBytes;
+      const maxBytes = snapshot.config.limits.maxFileBytes;
 
       // Enforce the limit while reading too, in case the file grows after stat().
       while (true) {
@@ -87,7 +95,8 @@ export class FilesystemService {
   }
 
   async getFileInfo(relativePath: string): Promise<{ name: string; type: string; size: number; modifiedAt: string }> {
-    const { target } = await this.resolve(relativePath, "metadata");
+    const snapshot = this.runtime.getSnapshot();
+    const { target } = await this.resolve(relativePath, "metadata", snapshot);
     const details = await stat(target);
     return {
       name: path.basename(target),
@@ -99,18 +108,19 @@ export class FilesystemService {
 
   async searchFiles(relativePath: string, query: string): Promise<string[]> {
     if (!query.trim() || query.length > 200) throw new Error("Search query must contain 1–200 characters.");
-    const { target, root } = await this.resolve(relativePath, "search");
+    const snapshot = this.runtime.getSnapshot();
+    const { target, root } = await this.resolve(relativePath, "search", snapshot);
     const results: string[] = [];
 
     const walk = async (directoryPath: string, depth: number): Promise<void> => {
-      if (depth > this.config.limits.maxSearchDepth || results.length >= this.config.limits.maxSearchResults) return;
+      if (depth > snapshot.config.limits.maxSearchDepth || results.length >= snapshot.config.limits.maxSearchResults) return;
       const directory = await opendir(directoryPath);
 
       for await (const entry of directory) {
-        if (results.length >= this.config.limits.maxSearchResults) break;
+        if (results.length >= snapshot.config.limits.maxSearchResults) break;
         if (entry.isSymbolicLink()) continue;
         const absolute = path.join(directoryPath, entry.name);
-        if (!(await this.isChildAllowed(root, absolute, "search"))) continue;
+        if (!(await this.isChildAllowed(root, absolute, "search", snapshot))) continue;
 
         if (entry.isDirectory()) {
           await walk(absolute, depth + 1);

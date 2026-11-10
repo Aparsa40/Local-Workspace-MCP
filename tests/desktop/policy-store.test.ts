@@ -127,7 +127,7 @@ test("keeps the active policy intact when replacement fails and can retry safely
   t.after(() => rm(f.directory, { recursive: true, force: true }));
 
   const activePath = path.join(f.directory, "app", "policy.json");
-  let failActiveReplacement = true;
+  let failActiveReplacement = false;
   const resilientStore = new PolicyStore({
     filePath: activePath,
     fileOperations: {
@@ -143,6 +143,7 @@ test("keeps the active policy intact when replacement fails and can retry safely
   });
 
   const first = await resilientStore.save(proposal(f.workspace, ["list"]), "");
+  failActiveReplacement = true;
   await assert.rejects(
     resilientStore.save(proposal(f.workspace, ["list", "read"]), first.revision),
     /Simulated replacement failure/

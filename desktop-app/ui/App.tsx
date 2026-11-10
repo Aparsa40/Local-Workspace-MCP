@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Activity, AlertTriangle, Check, CheckCircle2, ChevronRight, Code2,
   Copy, FileSearch, FileText, Folder, FolderPlus, FolderTree,
@@ -101,7 +101,7 @@ function App() {
   const [toast, setToast] = useState("");
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
 
-  const dirty = useMemo(() => JSON.stringify(savedPolicy) !== JSON.stringify(draft), [savedPolicy, draft]);
+  const dirty = useMemo(() => JSON.stringify(savedPolicy ?? emptyPolicy()) !== JSON.stringify(draft), [savedPolicy, draft]);
   const workspaces = draft.roots;
   const selected = workspaces.find((root) => root.path === selectedPath) ?? workspaces[0];
 
@@ -350,7 +350,7 @@ function App() {
   );
 }
 
-function PageHeading({ title, description, action }: { title: string; description: string; action?: React.ReactNode }) {
+function PageHeading({ title, description, action }: { title: string; description: string; action?: ReactNode }) {
   return <div className="page-heading"><div><div className="eyebrow">LOCAL WORKSPACE MCP</div><h1>{title}</h1><p>{description}</p></div>{action && <div className="heading-action">{action}</div>}</div>;
 }
 

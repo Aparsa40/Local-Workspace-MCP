@@ -47,7 +47,7 @@ test("reloads Core policy through the dedicated control stream without using MCP
     roots: [{ path: f.root, permissions: ["list"] }]
   };
 
-  channel.input.end(`${JSON.stringify(request(initial.revision, proposed))}\\n`);
+  channel.input.end(`${JSON.stringify(request(initial.revision, proposed))}\n`);
   await channel.done;
 
   const response = JSON.parse(channel.frames.join("").trim()) as {
@@ -69,7 +69,7 @@ test("rejects a stale expected revision without changing the active snapshot", a
   const current = runtime.getSnapshot();
   const channel = startChannel(runtime);
 
-  channel.input.end(`${JSON.stringify(request(initial.revision, f.config))}\\n`);
+  channel.input.end(`${JSON.stringify(request(initial.revision, f.config))}\n`);
   await channel.done;
 
   const response = JSON.parse(channel.frames.join("").trim()) as {
@@ -86,7 +86,7 @@ test("rejects malformed control messages with a bounded error response", async (
   const runtime = await PolicyRuntime.create(f.config);
   const channel = startChannel(runtime);
 
-  channel.input.end("{not-json}\\n");
+  channel.input.end("{not-json}\n");
   await channel.done;
 
   const response = JSON.parse(channel.frames.join("").trim()) as {
@@ -104,7 +104,7 @@ test("closes the control channel when a frame exceeds the maximum size", async (
   const runtime = await PolicyRuntime.create(f.config);
   const channel = startChannel(runtime);
 
-  channel.input.end(`${"x".repeat(64 * 1024 + 1)}\\n`);
+  channel.input.end(`${"x".repeat(64 * 1024 + 1)}\n`);
   await assert.rejects(channel.done, /size limit/i);
   channel.output.destroy();
 });

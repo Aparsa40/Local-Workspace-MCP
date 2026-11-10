@@ -61,11 +61,18 @@ export class PolicyRuntime {
 
   static async #buildSnapshot(input: unknown): Promise<PolicyRuntimeSnapshot> {
     const config = appConfigSchema.parse(input);
-    const permissions = await PermissionEngine.create(config);
+    const immutableConfig = Object.freeze({
+      roots: Object.freeze(config.roots.map((root) => Object.freeze({
+        path: root.path,
+        permissions: Object.freeze([...root.permissions])
+      }))),
+      limits: Object.freeze({ ...config.limits })
+    }) as unknown as AppConfig;
+    const permissions = await PermissionEngine.create(immutableConfig);
     const revision = createHash("sha256")
-      .update(JSON.stringify(config), "utf8")
+      .update(JSON.stringify(immutableConfig), "utf8")
       .digest("hex");
 
-    return Object.freeze({ config, permissions, revision });
+    return Object.freeze({ config: immutableConfig, permissions, revision });
   }
 }

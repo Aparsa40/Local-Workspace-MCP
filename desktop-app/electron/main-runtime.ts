@@ -29,6 +29,7 @@ export interface ElectronMainRuntimeOptions {
   readonly appVersion: string;
   readonly ipcMain: IpcMainLike;
   readonly isTrustedSender: (event: IpcEventLike) => boolean;
+  readonly selectDirectory: () => Promise<string | null>;
 }
 
 interface IpcFailure {
@@ -73,7 +74,9 @@ export class ElectronMainRuntime {
     this.#service = new DesktopControlService({
       policyStore,
       coreManager,
-      appVersion: options.appVersion
+      appVersion: options.appVersion,
+      coreEntryPath: options.coreEntryPath,
+      policyPath
     });
 
     this.#register(IPC_CHANNELS.appStatus, emptyPayloadSchema, () => this.#service.getStatus());

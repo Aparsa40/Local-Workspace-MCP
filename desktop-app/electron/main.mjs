@@ -7,8 +7,10 @@ const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 let mainWindow;
 let runtime;
 let quitting = false;
+let smokeTimer;
 
 function finishSmoke(exitCode) {
+  if (smokeTimer) clearTimeout(smokeTimer);
   const activeRuntime = runtime;
   runtime = undefined;
   void Promise.resolve(activeRuntime?.dispose())
@@ -19,6 +21,11 @@ function finishSmoke(exitCode) {
 }
 
 function verifySmokeWindow(window) {
+  smokeTimer = setTimeout(() => {
+    process.stderr.write("Electron smoke verification timed out.\\n");
+    finishSmoke(1);
+  }, 30_000);
+
   window.webContents.once("did-fail-load", (_event, errorCode, description) => {
     process.stderr.write(`Electron smoke renderer load failed (${errorCode}): ${description}\n`);
     finishSmoke(1);
@@ -69,7 +76,9 @@ function createMainWindow() {
   // This shell does not require renderer navigation. Deny every page-initiated
   // navigation rather than trying to maintain an origin allowlist for file://.
   mainWindow.webContents.on("will-navigate", (event) => event.preventDefault());
-  mainWindow.once("ready-to-show", () => mainWindow?.show());
+  mainWindow.once("ready-to-show", () => {
+    if (process.env.LWMCP_ELECTRON_SMOKE !== "1") mainWindow?.show();
+  });
   void mainWindow.loadFile(path.join(currentDirectory, "..", "ui-dist", "index.html"));
   mainWindow.on("closed", () => { mainWindow = undefined; });
 

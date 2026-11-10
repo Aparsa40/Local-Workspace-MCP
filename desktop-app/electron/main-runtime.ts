@@ -27,7 +27,7 @@ export interface ElectronMainRuntimeOptions {
   readonly electronExecutablePath: string;
   readonly appVersion: string;
   readonly ipcMain: IpcMainLike;
-  readonly isTrustedSender: (sender: unknown) => boolean;
+  readonly isTrustedSender: (event: IpcEventLike) => boolean;
 }
 
 interface IpcFailure {
@@ -96,7 +96,7 @@ export class ElectronMainRuntime {
     action: (payload: T) => Promise<unknown>
   ): void {
     this.#ipcMain.handle(channel, async (event, payload) => {
-      if (!this.#isTrustedSender(event.sender)) {
+      if (!this.#isTrustedSender(event)) {
         return failure("UNTRUSTED_SENDER", "This window is not allowed to call the desktop API.");
       }
 

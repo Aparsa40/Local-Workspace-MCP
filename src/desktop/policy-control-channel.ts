@@ -167,7 +167,7 @@ async function applyRequest(
 }
 
 async function writeResponse(output: Writable, response: ControlResponse): Promise<void> {
-  const frame = `${JSON.stringify(response)}\\n`;
+  const frame = `${JSON.stringify(response)}\n`;
   if (!output.write(frame, "utf8")) {
     await once(output, "drain");
   }

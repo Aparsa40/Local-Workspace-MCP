@@ -60,6 +60,29 @@ test("reloads Core policy through the dedicated control stream without using MCP
   channel.output.destroy();
 });
 
+test("returns the active Core revision over the management channel", async (t) => {
+  const f = await fixture();
+  t.after(() => rm(f.root, { recursive: true, force: true }));
+  const runtime = await PolicyRuntime.create(f.config);
+  const revision = runtime.getSnapshot().revision;
+  const channel = startChannel(runtime);
+
+  channel.input.end(`${JSON.stringify({
+    protocolVersion: 1,
+    requestId: randomUUID(),
+    method: "policy.getRevision",
+    params: {}
+  })}\\n`);
+  await channel.done;
+
+  const response = JSON.parse(channel.frames.join("").trim()) as {
+    ok: boolean; result?: { revision: string };
+  };
+  assert.equal(response.ok, true);
+  assert.equal(response.result?.revision, revision);
+  channel.output.destroy();
+});
+
 test("rejects a stale expected revision without changing the active snapshot", async (t) => {
   const f = await fixture();
   t.after(() => rm(f.root, { recursive: true, force: true }));

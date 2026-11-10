@@ -30,7 +30,7 @@ These are repository observations, not a claim that every security property has 
 
 ### Not yet present
 - Production Electron desktop application and hardened preload bridge.
-- Desktop runtime / process manager.
+- Electron app shell and process lifecycle/IPC integration (a Node-only Core process manager service is implemented, but not yet wired into Electron).
 - Implemented management IPC handlers.
 - Actual UI-driven policy editing and validation.
 - Persistent structured audit viewer, retention, and rotation.
@@ -93,7 +93,7 @@ Work:
 - [x] Verify deterministic policy replacement-failure recovery and retry behavior in Linux and Windows CI (PR #18). This is targeted fault-injection coverage, not a guarantee against power loss or every filesystem failure.
 - [x] Define an immutable Core policy snapshot and explicit, revision-checked, serialized in-process reload API; filesystem operations capture one consistent snapshot per request.
 - [x] Define and implement a bounded Core-side management protocol for policy reload over dedicated inherited pipes, separate from MCP stdin/stdout (ADR-009); unit tests cover success, stale revision, malformed frames, and size limits.
-- [ ] Attach the protocol to Electron-main-owned child-process pipes and integrate policy-store saves with Core reload; no end-to-end desktop control path is enabled yet.
+- [x] Add a Node-only CoreProcessManager that launches an app-managed Core child with dedicated pipes, performs an initial revision handshake, serializes reloads, bounds stderr capture, and shuts the child down safely; integration tests exercise real child-process pipes on Linux and Windows.\n- [ ] Wire CoreProcessManager and PolicyStore into Electron main-process IPC; no renderer-facing policy management flow is enabled yet.
 - [ ] Define the Core tool metadata/registry contract.
 - [ ] Define the structured audit event schema, correlation IDs, retention, and redaction.
 - [ ] Complete a threat model for desktop IPC, policy writes, and Windows filesystem operations.

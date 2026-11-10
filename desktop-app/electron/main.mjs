@@ -8,6 +8,7 @@ let mainWindow;
 let runtime;
 let quitting = false;
 let smokeTimer;
+const smokeMode = smokeMode || process.argv.includes("--lwmcp-smoke-test");
 
 function finishSmoke(exitCode) {
   if (smokeTimer) clearTimeout(smokeTimer);
@@ -77,7 +78,7 @@ function createMainWindow() {
   // navigation rather than trying to maintain an origin allowlist for file://.
   mainWindow.webContents.on("will-navigate", (event) => event.preventDefault());
   mainWindow.once("ready-to-show", () => {
-    if (process.env.LWMCP_ELECTRON_SMOKE !== "1") mainWindow?.show();
+    if (!smokeMode) mainWindow?.show();
   });
   mainWindow.on("closed", () => { mainWindow = undefined; });
 
@@ -109,12 +110,12 @@ app.whenReady().then(() => {
     )
   });
   const window = createMainWindow();
-  if (process.env.LWMCP_ELECTRON_SMOKE === "1") {
+  if (smokeMode) {
     verifySmokeWindow(window);
   }
   void window.loadFile(path.join(currentDirectory, "..", "ui-dist", "index.html")).catch((error) => {
     process.stderr.write(`Desktop renderer failed to load: ${error instanceof Error ? error.message : "unknown error"}\n`);
-    if (process.env.LWMCP_ELECTRON_SMOKE === "1") finishSmoke(1);
+    if (smokeMode) finishSmoke(1);
   });
 
   app.on("activate", () => {

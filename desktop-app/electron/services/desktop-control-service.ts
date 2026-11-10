@@ -60,8 +60,8 @@ export class DesktopControlService {
   readonly #policyStore: PolicyStorePort;
   readonly #coreManager: CoreProcessManagerPort;
   readonly #appVersion: string;
-  readonly #coreEntryPath?: string;
-  readonly #policyPath?: string;
+  readonly #coreEntryPath: string | undefined;
+  readonly #policyPath: string | undefined;
 
   constructor(options: DesktopControlServiceOptions) {
     this.#policyStore = options.policyStore;

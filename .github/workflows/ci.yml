@@ -69,6 +69,8 @@ jobs:
         working-directory: desktop-app
       - run: npm exec -- electron --no-sandbox --lwmcp-smoke-test .
         working-directory: desktop-app
+        env:
+          LWMCP_ELECTRON_SMOKE: "1"
 
   build:
     name: CI / Build

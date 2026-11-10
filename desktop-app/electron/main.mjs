@@ -26,12 +26,9 @@ function createMainWindow() {
   });
 
   mainWindow.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
-  mainWindow.webContents.on("will-navigate", (event, targetUrl) => {
-    const currentUrl = mainWindow?.webContents.getURL();
-    if (currentUrl && new URL(targetUrl).origin !== new URL(currentUrl).origin) {
-      event.preventDefault();
-    }
-  });
+  // This shell does not require renderer navigation. Deny every page-initiated
+  // navigation rather than trying to maintain an origin allowlist for file://.
+  mainWindow.webContents.on("will-navigate", (event) => event.preventDefault());
   mainWindow.once("ready-to-show", () => mainWindow?.show());
   void mainWindow.loadFile(path.join(currentDirectory, "..", "index.html"));
   mainWindow.on("closed", () => { mainWindow = undefined; });
@@ -40,13 +37,21 @@ function createMainWindow() {
 }
 
 app.whenReady().then(() => {
+  const coreEntryPath = app.isPackaged
+    ? path.join(process.resourcesPath, "core", "index.js")
+    : path.resolve(currentDirectory, "..", "..", "dist", "index.js");
+
   runtime = new ElectronMainRuntime({
     appDataPath: app.getPath("userData"),
-    coreEntryPath: app.isPackaged\n      ? path.join(process.resourcesPath, "core", "index.js")\n      : path.resolve(currentDirectory, "..", "..", "dist", "index.js"),
+    coreEntryPath,
     electronExecutablePath: process.execPath,
     appVersion: app.getVersion(),
     ipcMain,
-    isTrustedSender: (event) => Boolean(mainWindow && event.sender === mainWindow.webContents && event.senderFrame === mainWindow.webContents.mainFrame)
+    isTrustedSender: (event) => Boolean(
+      mainWindow &&
+      event.sender === mainWindow.webContents &&
+      event.senderFrame === mainWindow.webContents.mainFrame
+    )
   });
   createMainWindow();
 

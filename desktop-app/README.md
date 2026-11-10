@@ -28,6 +28,8 @@ The desktop launch script builds the Core, Electron main-process TypeScript, and
 
 A policy is shown as active only after the managed Core confirms the matching runtime revision. If a live reload fails, the desktop service attempts to stop the managed Core and reports the policy as unapplied.
 
+See [the desktop Electron threat model](../docs/THREAT_MODEL_DESKTOP.md) for trust boundaries, implemented mitigations, residual risks, and M1 security gates.
+
 ## Security boundary
 
 - Renderer runs with `contextIsolation`, `sandbox`, and `nodeIntegration: false`.

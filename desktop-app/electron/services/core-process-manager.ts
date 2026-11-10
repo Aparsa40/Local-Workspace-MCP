@@ -122,7 +122,7 @@ export class CoreProcessManager {
   }
 
   async start(): Promise<ManagedCoreStatus> {
-    if (this.#state === "starting" || this.#state === "running" || this.#state === "stopping") {
+    if (this.#state === "starting" || this.#state === "running" || this.#state === "stopping" ||\n        (this.#child !== undefined && this.#child.exitCode === null && this.#child.signalCode === null)) {
       throw new CoreProcessManagerError("ALREADY_RUNNING", "The managed Core process is already active.");
     }
 
@@ -291,7 +291,7 @@ export class CoreProcessManager {
   #sendRequest(method: "policy.getRevision", params: Record<string, never>): Promise<string>;
   #sendRequest(method: "policy.reload", params: { expectedRevision: string; config: unknown }): Promise<string>;
   #sendRequest(method: string, params: object): Promise<string> {
-    if (!this.#controlInput || !this.#child || this.#child.exitCode !== null) {
+    if (!this.#controlInput || !this.#child || this.#child.exitCode !== null || this.#child.signalCode !== null) {
       return Promise.reject(new CoreProcessManagerError("NOT_RUNNING", "The managed Core control channel is unavailable."));
     }
 

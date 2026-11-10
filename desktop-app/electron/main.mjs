@@ -8,7 +8,7 @@ let mainWindow;
 let runtime;
 let quitting = false;
 let smokeTimer;
-const smokeMode = process.env.CI === "true" || process.env.LWMCP_ELECTRON_SMOKE === "1" || process.argv.includes("--lwmcp-smoke-test");
+const smokeMode = process.env.CI === "true" || process.env.LWMCP_ELECTRON_SMOKE === "1" || process.argv.includes("--lwmcp-smoke-test") || app.commandLine.hasSwitch("lwmcp-smoke-test");
 
 function finishSmoke(exitCode) {
   if (smokeTimer) clearTimeout(smokeTimer);

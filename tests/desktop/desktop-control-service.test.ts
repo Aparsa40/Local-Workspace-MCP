@@ -1,18 +1,16 @@
-import test from "node:test";
+import test, { type TestContext } from "node:test";
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import {
-  DesktopControlService,
-  type DesktopControlServiceOptions
-} from "../../desktop-app/electron/services/desktop-control-service.js";
+import { DesktopControlService } from "../../desktop-app/electron/services/desktop-control-service.js";
 import { PolicyStore } from "../../desktop-app/electron/services/policy-store.js";
 import type { ManagedCoreStatus } from "../../desktop-app/electron/services/core-process-manager.js";
 
 class FakeCoreManager {
   #state: ManagedCoreStatus["state"] = "stopped";
   #revision: string | undefined;
+  #startRevision: string | undefined;
   failReload = false;
   stopCalls = 0;
 
@@ -26,6 +24,7 @@ class FakeCoreManager {
 
   async start(): Promise<ManagedCoreStatus> {
     this.#state = "running";
+    this.#revision = this.#startRevision;
     return this.getStatus();
   }
 
@@ -45,19 +44,22 @@ class FakeCoreManager {
     this.#state = "running";
     this.#revision = revision;
   }
+
+  setStartRevision(revision: string): void {
+    this.#startRevision = revision;
+  }
 }
 
-async function setup(t: Parameters<Parameters<typeof test>[1]>[0]) {
+async function setup(t: TestContext) {
   const directory = await mkdtemp(path.join(os.tmpdir(), "lwmcp-desktop-service-"));
   const workspace = path.join(directory, "workspace");
   await mkdir(workspace);
   const manager = new FakeCoreManager();
-  const options = {
+  const service = new DesktopControlService({
     policyStore: new PolicyStore({ filePath: path.join(directory, "app", "policy.json") }),
     coreManager: manager,
     appVersion: "0.1.0"
-  } as unknown as DesktopControlServiceOptions;
-  const service = new DesktopControlService(options);
+  });
   t.after(async () => {
     await service.dispose();
     await rm(directory, { recursive: true, force: true });
@@ -83,11 +85,13 @@ test("reports an unconfigured policy without inventing an active revision", asyn
 });
 
 test("starts Core only when its startup revision matches the saved policy", async (t) => {
-  const { service, workspace } = await setup(t);
-  await service.savePolicy(proposal(workspace), "");
+  const { service, manager, workspace } = await setup(t);
+  const saved = await service.savePolicy(proposal(workspace), "");
+  manager.setStartRevision(saved.savedRevision);
   const result = await service.startCore();
   assert.equal(result.core.state, "running");
-  assert.equal(result.core.policyApplied, false);
+  assert.equal(result.core.policyApplied, true);
+  assert.equal(result.core.activeRevision, saved.savedRevision);
 });
 
 test("does not claim a policy is active when Core reload fails", async (t) => {

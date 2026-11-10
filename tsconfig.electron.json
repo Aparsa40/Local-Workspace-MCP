@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist-desktop",
+    "noEmit": false,
+    "declaration": false,
+    "sourceMap": false
+  },
+  "include": [
+    "src/config/**/*.ts",
+    "desktop-app/electron/**/*.ts"
+  ],
+  "exclude": ["node_modules", "dist", "dist-desktop", "tests"]
+}

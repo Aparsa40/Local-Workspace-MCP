@@ -8,7 +8,9 @@ From the repository root:
 
 ```powershell
 npm install
-npm install --prefix desktop-app
+cd desktop-app
+npm install
+cd ..
 npm run desktop:dev
 ```
 

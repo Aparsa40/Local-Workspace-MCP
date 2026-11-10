@@ -15,5 +15,6 @@ export const IPC_CHANNELS = {
   policyGet: "lwmcp:policy:get",
   policySave: "lwmcp:policy:save",
   coreStart: "lwmcp:core:start",
-  coreStop: "lwmcp:core:stop"
+  coreStop: "lwmcp:core:stop",
+  workspacePickDirectory: "lwmcp:workspace:pick-directory"
 } as const;

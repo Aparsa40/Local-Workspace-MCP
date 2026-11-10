@@ -1,10 +1,11 @@
 import { z } from "zod";
+import { policyDocumentSchema } from "../../../src/config/policy-schema.js";
 
 const revisionSchema = z.string().regex(/^(?:[a-f0-9]{64})?$/);
 
 export const emptyPayloadSchema = z.object({}).strict();
 export const savePolicyPayloadSchema = z.object({
-  proposal: z.record(z.string(), z.unknown()),
+  proposal: policyDocumentSchema,
   expectedRevision: revisionSchema
 }).strict();
 

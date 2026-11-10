@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Local Workspace MCP</title>
+    <style>
+      :root { color-scheme: dark; font-family: Segoe UI, sans-serif; background: #10131a; color: #e8edf5; }
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; }
+      main { width: min(720px, calc(100% - 48px)); padding: 32px; border: 1px solid #2a3445; border-radius: 16px; background: #171d28; }
+      h1 { margin-top: 0; font-size: 28px; }
+      p { color: #aab6c8; line-height: 1.6; }
+      button { margin: 8px 8px 0 0; padding: 10px 16px; border: 0; border-radius: 8px; background: #4778d0; color: white; cursor: pointer; }
+      pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 16px; border-radius: 8px; background: #0d1118; color: #b9c8dc; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Local Workspace MCP</h1>
+      <p>Electron main process and the restricted desktop bridge are running. The production React screens will be connected in the next implementation stage.</p>
+      <p id="state">Loading backend status…</p>
+      <button id="refresh">Refresh status</button>
+      <button id="start">Start managed Core</button>
+      <button id="stop">Stop managed Core</button>
+      <pre id="details" aria-live="polite"></pre>
+    </main>
+    <script type="module" src="./renderer.js"></script>
+  </body>
+</html>

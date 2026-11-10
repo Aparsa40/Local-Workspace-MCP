@@ -7,9 +7,9 @@ export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ["**/*.js", "**/*.ts"],
+    files: ["**/*.{js,mjs,cjs,ts}"],
     languageOptions: {
-      globals: { ...globals.node },
+      globals: { ...globals.node, ...globals.browser },
     },
     rules: {
       "no-console": ["error", { allow: ["error", "warn"] }],

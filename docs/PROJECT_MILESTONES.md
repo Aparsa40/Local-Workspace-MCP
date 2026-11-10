@@ -45,16 +45,20 @@ Already implemented in the repository:
 - Versioned PolicyStore with validation, revision checks, backup/recovery, and failure-injection coverage.
 - Seven-screen React prototype (still demo-only).
 
-Still required to complete M1:
-- Electron app shell and main-process lifecycle.
-- Hardened preload bridge using `contextBridge`; renderer must not receive Node access or generic IPC forwarding.
-- Strict, Zod-validated, allowlisted IPC handlers.
+Implemented in the current M1 branch (pending PR review and final CI):
+- Electron app shell and main-process lifecycle foundation.
+- Hardened preload bridge using `contextBridge`; renderer has no Node access or generic IPC forwarding.
+- Strict, Zod-validated, allowlisted IPC handlers with invoking main-frame validation.
 - Main-process service layer connecting PolicyStore and CoreProcessManager.
-- Correct handling of persisted-but-not-applied policy if Core reload fails; never display a policy as active unless the running Core confirms its revision.
-- Windows integration tests for startup, shutdown, reload failure, process exit, IPC validation, and renderer privilege boundaries.
-- A real desktop build/launch smoke test.
+- Separate persisted-policy and normalized Core-runtime revision handling; a policy is reported active only when Core confirms the derived runtime revision.
+- Persisted-but-not-applied policy handling; reload failure triggers a managed-Core stop attempt and remains reported as unapplied.
 
-The merged Node-only CoreProcessManager is a prerequisite, not completion of the Electron integration.
+Still required to complete M1:
+- Full Windows GUI launch and end-to-end reload/failure/shutdown verification.
+- Connect the approved seven-screen React UI to the real backend operations.
+- Complete IPC threat review and Windows packaging/build smoke tests.
+
+The merged Node-only CoreProcessManager was a prerequisite; this branch adds the first Electron integration but does not complete M1.
 
 ## Milestone completion rules
 

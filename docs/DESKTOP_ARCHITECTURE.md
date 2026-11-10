@@ -109,7 +109,7 @@ desktop-app/
       state/
 ```
 
-The first integration step may import or move approved UI components from `desktop-prototype/`; it must not maintain two divergent production UIs.
+The first Electron shell now lives in `desktop-app/electron/`. The current HTML/JS renderer is only an integration harness for the main-process boundary; it is not the final seven-screen UI. The approved React prototype remains the visual reference and will be connected in a later UI integration step.
 
 The Core remains in the repository's existing `src/` tree and retains its own root package/build/start commands.
 
@@ -200,7 +200,7 @@ The Core now provides a separately testable, bounded management protocol in src/
 
 Protocol version 1 supports policy.getRevision for the active Core revision handshake and policy.reload for applying a complete replacement config. Each newline-delimited JSON frame must be at most 64 KiB and contain a UUID request ID, the current expected SHA-256 revision, and the complete proposed Core config. Core validates the request and config, then delegates to PolicyRuntime.reload; stale revisions and invalid policies return stable error codes. Raw errors and stack traces are not returned.
 
-The Core entrypoint activates this handler only when LWMCP_CONTROL_CHANNEL=1 is explicitly set and both inherited descriptors are verified as pipes. Ordinary client-owned Core processes do not set this marker and do not inspect or use descriptors 3/4. The CoreProcessManager service now owns a child process, reads the initial Core revision, sends serialized reload requests, bounds stderr capture, and performs graceful shutdown. The Electron main process and its restricted renderer IPC are not yet wired to this service, so the graphical policy-save workflow remains pending. Until that integration and Windows lifecycle tests are complete, policy file saves must not be described as immediately revoking permissions in existing sessions.
+The Core entrypoint activates this handler only when LWMCP_CONTROL_CHANNEL=1 is explicitly set and both inherited descriptors are verified as pipes. Ordinary client-owned Core processes do not set this marker and do not inspect or use descriptors 3/4. The CoreProcessManager service now owns a child process, reads the initial Core revision, sends serialized reload requests, bounds stderr capture, and performs graceful shutdown. The Electron main process now owns PolicyStore and CoreProcessManager through a narrow service layer. Its named preload API exposes policy read/save and managed Core start/stop/status operations; all main-process handlers validate payloads and verify the invoking WebContents. A failed live reload triggers a managed-Core stop attempt and is reported as unapplied. The seven-screen React UI is not yet connected, and Windows end-to-end launch/reload tests remain required.
 
 ## 8. Core process lifecycle
 
@@ -262,7 +262,7 @@ The audit screen must show only records actually persisted by Core. Demo records
 
 ## 12. Definition of done for the first desktop foundation
 
-- Electron starts a local window with the approved React UI.
+- Electron starts a local hardened window with a minimal integration harness; the approved React UI connection remains a follow-up.
 - Renderer has no direct Node.js or arbitrary filesystem access.
 - A native directory picker returns a candidate path through a narrow API.
 - Main process validates IPC inputs and rejects malformed payloads.

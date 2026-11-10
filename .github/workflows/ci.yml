@@ -57,7 +57,11 @@ jobs:
         with:
           node-version: 22
       - run: npm install --ignore-scripts
+      - run: npm install --prefix desktop-app
+      - run: npm run build
+      - run: npm run build:desktop
       - run: npm test
+      - run: npm exec --prefix desktop-app -- electron --version
 
   build:
     name: CI / Build
@@ -69,6 +73,7 @@ jobs:
           node-version: 22
       - run: npm install --ignore-scripts
       - run: npm run build
+      - run: npm run build:desktop
 
   audit:
     name: Security / npm audit
@@ -79,7 +84,9 @@ jobs:
         with:
           node-version: 22
       - run: npm install --ignore-scripts
+      - run: npm install --prefix desktop-app --ignore-scripts
       - run: npm audit --audit-level=high
+      - run: npm audit --prefix desktop-app --audit-level=high
 
   required:
     name: CI / Required

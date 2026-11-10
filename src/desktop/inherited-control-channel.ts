@@ -12,7 +12,12 @@ export function isControlChannelEnabled(
   env: NodeJS.ProcessEnv = process.env,
   isPipe: PipeInspector = (descriptor) => {
     const details = fstatSync(descriptor);
-    return details.isFIFO() || details.isSocket();
+    // Windows may report anonymous inherited pipe handles with mode 0 rather
+    // than classifying them as FIFO/socket. A successful fstat that is not a
+    // regular file, directory, character device, or block device is accepted.
+    return details.isFIFO() || details.isSocket() ||
+      (!details.isFile() && !details.isDirectory() &&
+       !details.isCharacterDevice() && !details.isBlockDevice());
   }
 ): boolean {
   if (env.LWMCP_CONTROL_CHANNEL !== "1") return false;

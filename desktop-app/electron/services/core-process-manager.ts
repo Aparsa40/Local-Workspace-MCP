@@ -98,8 +98,8 @@ export class CoreProcessManager {
       executablePath: options.executablePath,
       cwd: options.cwd,
       configPath: options.configPath,
-      args: options.args,
-      env: options.env,
+      args: options.args ?? [],
+      env: options.env ?? {},
       startupTimeoutMs: options.startupTimeoutMs ?? 10_000,
       requestTimeoutMs: options.requestTimeoutMs ?? 5_000,
       stopTimeoutMs: options.stopTimeoutMs ?? 3_000,
@@ -188,6 +188,7 @@ export class CoreProcessManager {
     } catch (error) {
       this.#state = "failed";
       child.kill();
+      await this.#waitForExit(child, this.#options.stopTimeoutMs);
       this.#rejectPending(error instanceof Error ? error : new Error("Managed Core startup failed."));
       throw error;
     }
@@ -234,6 +235,7 @@ export class CoreProcessManager {
     const child = this.#child;
     if (!child || child.exitCode !== null || child.signalCode !== null) {
       this.#state = "stopped";
+      this.#revision = undefined;
       return;
     }
 

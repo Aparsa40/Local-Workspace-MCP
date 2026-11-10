@@ -122,7 +122,8 @@ export class CoreProcessManager {
   }
 
   async start(): Promise<ManagedCoreStatus> {
-    if (this.#state === "starting" || this.#state === "running" || this.#state === "stopping" ||\n        (this.#child !== undefined && this.#child.exitCode === null && this.#child.signalCode === null)) {
+    if (this.#state === "starting" || this.#state === "running" || this.#state === "stopping" ||
+        (this.#child !== undefined && this.#child.exitCode === null && this.#child.signalCode === null)) {
       throw new CoreProcessManagerError("ALREADY_RUNNING", "The managed Core process is already active.");
     }
 

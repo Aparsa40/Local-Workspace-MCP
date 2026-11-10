@@ -46,7 +46,7 @@ app.whenReady().then(() => {
     electronExecutablePath: process.execPath,
     appVersion: app.getVersion(),
     ipcMain,
-    isTrustedSender: (sender) => Boolean(mainWindow && sender === mainWindow.webContents)
+    isTrustedSender: (event) => Boolean(mainWindow && event.sender === mainWindow.webContents && event.senderFrame === mainWindow.webContents.mainFrame)
   });
   createMainWindow();
 

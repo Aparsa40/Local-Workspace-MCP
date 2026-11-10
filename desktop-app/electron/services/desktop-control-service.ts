@@ -4,6 +4,7 @@ import { toAppConfig, type PolicyDocument } from "../../../src/config/policy-sch
 import type { ManagedCoreStatus } from "./core-process-manager.js";
 
 export interface PolicyStorePort {
+  hasStoredPolicy(): Promise<boolean>;
   load(): Promise<PolicySnapshot>;
   save(proposal: unknown, expectedRevision: string): Promise<SavePolicyResult>;
 }
@@ -72,7 +73,9 @@ export class DesktopControlService {
         recoveredFromBackup: snapshot.recoveredFromBackup
       };
     } catch (error) {
-      if (isMissingFile(error)) return { configured: false };
+      if (isMissingFile(error) && !(await this.#policyStore.hasStoredPolicy())) {
+        return { configured: false };
+      }
       throw error;
     }
   }

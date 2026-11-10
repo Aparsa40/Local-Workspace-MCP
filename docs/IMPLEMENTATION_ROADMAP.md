@@ -24,7 +24,7 @@
 - Audit events written to stderr.
 - Existing unit/security tests and GitHub Actions checks.
 - Security, contribution, versioning, changelog, and initial architecture documents.
-- Agreed seven-screen React UI prototype (demo data only).
+- Approved seven-screen React visual system bundled into Electron; Dashboard, Workspaces, Permissions, Tools, Connections, and resource limits now consume live backend state.
 
 These are repository observations, not a claim that every security property has been exhaustively proven. A dedicated Windows security review remains required.
 
@@ -32,10 +32,9 @@ These are repository observations, not a claim that every security property has 
 - Full Windows desktop launch and end-to-end manual verification of the Electron application.
 - Persistent structured audit viewer, retention, and rotation.
 - Remaining Settings controls and diagnostics.
-- Installer and release/update workflow.
 - Write/create/move/rename/delete tools.
 - Workspace tree tool.
-- Production Connections/client configuration screen.
+- Full client setup guides, configuration validation, and diagnostics for supported MCP clients.
 - Git, Terminal, PowerShell, and Developer Tools modules.
 - Installer and release/update workflow.
 - Streamable HTTP transport.

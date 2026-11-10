@@ -1,5 +1,5 @@
 import path from "node:path";
-import { z } from "zod";
+import type { ZodType } from "zod";
 import { PolicyStore } from "./services/policy-store.js";
 import { CoreProcessManager } from "./services/core-process-manager.js";
 import { DesktopControlService } from "./services/desktop-control-service.js";
@@ -91,7 +91,7 @@ export class ElectronMainRuntime {
 
   #register<T>(
     channel: string,
-    schema: z.ZodType<T>,
+    schema: ZodType<T>,
     action: (payload: T) => Promise<unknown>
   ): void {
     this.#ipcMain.handle(channel, async (event, payload) => {

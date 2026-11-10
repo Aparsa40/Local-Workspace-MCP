@@ -62,8 +62,8 @@ Implemented in the current M1 branch (pending review and CI):
 - Made an empty workspace list a valid default-deny policy.
 
 Still required to complete M1:
-- Full Windows GUI launch and end-to-end folder selection, policy save/reload, failure handling, and shutdown verification.
-- Complete the IPC threat model and Windows desktop security review.
+- Manual Windows verification of native folder selection, policy save/reload, failure handling, and shutdown. (The CI smoke test now verifies that Electron launches the bundled React renderer and trusted preload IPC.)
+- Review and approve the desktop IPC threat model and complete the Windows filesystem security review.
 - Verify that external stdio clients remain independent of the Desktop App lifecycle.
 
 Structured persistent Activity & Audit and the remaining Settings workflows belong to the later functional-management delivery stage, not the M1 security foundation.

@@ -98,6 +98,25 @@ test("starts Core only when its normalized runtime revision matches the saved po
   assert.notEqual(result.core.activeRevision, saved.savedRevision);
 });
 
+test("applies a saved policy only after Core acknowledges the matching runtime revision", async (t) => {
+  const { service, manager, workspace } = await setup(t);
+  const first = await service.savePolicy(proposal(workspace), "");
+  const firstPolicy = await service.getPolicy();
+  assert.ok(firstPolicy.document);
+
+  manager.setRunning(getCorePolicyRevision(firstPolicy.document));
+  const next = await service.savePolicy(proposal(workspace, ["list"]), first.savedRevision);
+  const nextPolicy = await service.getPolicy();
+  assert.ok(nextPolicy.document);
+
+  assert.equal(next.applied, true);
+  assert.equal(next.activeRevision, getCorePolicyRevision(nextPolicy.document));
+  assert.equal(next.savedRevision, nextPolicy.revision);
+  const status = await service.getStatus();
+  assert.equal(status.core.policyApplied, true);
+  assert.equal(status.core.activeRevision, next.activeRevision);
+});
+
 test("does not claim a policy is active when Core reload fails", async (t) => {
   const { service, manager, workspace } = await setup(t);
   const first = await service.savePolicy(proposal(workspace), "");

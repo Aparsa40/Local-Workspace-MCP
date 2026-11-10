@@ -1,0 +1,201 @@
+import { createHash, randomUUID } from "node:crypto";
+import {
+  copyFile,
+  mkdir,
+  open,
+  readFile,
+  realpath,
+  rename,
+  rm,
+  stat
+} from "node:fs/promises";
+import path from "node:path";
+import {
+  parsePolicyDocument,
+  serializePolicyDocument,
+  type PolicyDocument
+} from "../../../src/config/policy-schema.js";
+
+export interface PolicySnapshot {
+  readonly document: PolicyDocument;
+  readonly revision: string;
+  readonly recoveredFromBackup: boolean;
+}
+
+export interface SavePolicyResult extends PolicySnapshot {
+  readonly previousRevision: string;
+}
+
+export interface PolicyStoreOptions {
+  readonly filePath: string;
+  readonly backupPath?: string;
+}
+
+export class PolicyRevisionConflictError extends Error {
+  constructor(readonly expectedRevision: string, readonly actualRevision: string) {
+    super("Policy has changed since it was loaded. Reload it before saving.");
+    this.name = "PolicyRevisionConflictError";
+  }
+}
+
+export class PolicyStore {
+  readonly #filePath: string;
+  readonly #backupPath: string;
+
+  constructor(options: PolicyStoreOptions) {
+    if (!path.isAbsolute(options.filePath)) {
+      throw new Error("Policy file path must be absolute.");
+    }
+    this.#filePath = path.resolve(options.filePath);
+    this.#backupPath = path.resolve(options.backupPath ?? `${this.#filePath}.bak`);
+    if (this.#backupPath === this.#filePath) {
+      throw new Error("Policy backup path must differ from the active policy path.");
+    }
+  }
+
+  async load(): Promise<PolicySnapshot> {
+    try {
+      const document = await this.#readValidated(this.#filePath);
+      return this.#snapshot(document, false);
+    } catch (primaryError) {
+      if (!this.#isMissingFile(primaryError)) {
+        // A malformed active file is not silently replaced by a backup.
+        throw primaryError;
+      }
+    }
+
+    const backup = await this.#readValidated(this.#backupPath);
+    return this.#snapshot(backup, true);
+  }
+
+  async save(
+    proposal: unknown,
+    expectedRevision: string
+  ): Promise<SavePolicyResult> {
+    const validated = await this.#validateWorkspaceRoots(proposal);
+    const serialized = serializePolicyDocument(validated);
+    const nextRevision = this.#revision(serialized);
+    const directory = path.dirname(this.#filePath);
+    await mkdir(directory, { recursive: true });
+
+    let currentRevision = "";
+    let hasCurrent = false;
+    try {
+      const current = await readFile(this.#filePath, "utf8");
+      const parsed = parsePolicyDocument(JSON.parse(current) as unknown);
+      currentRevision = this.#revision(serializePolicyDocument(parsed.document));
+      hasCurrent = true;
+    } catch (error) {
+      if (!this.#isMissingFile(error)) throw error;
+    }
+
+    if (currentRevision !== expectedRevision) {
+      throw new PolicyRevisionConflictError(expectedRevision, currentRevision);
+    }
+
+    const temporaryPath = path.join(directory, `.${path.basename(this.#filePath)}.${randomUUID()}.tmp`);
+    const backupTemporaryPath = `${this.#backupPath}.${randomUUID()}.tmp`;
+    let handle: Awaited<ReturnType<typeof open>> | undefined;
+
+    try {
+      handle = await open(temporaryPath, "wx", 0o600);
+      await handle.writeFile(serialized, "utf8");
+      await handle.sync();
+      await handle.close();
+      handle = undefined;
+
+      if (hasCurrent) {
+        await mkdir(path.dirname(this.#backupPath), { recursive: true });
+        await copyFile(this.#filePath, backupTemporaryPath);
+        const backupHandle = await open(backupTemporaryPath, "r+");
+        try {
+          await backupHandle.sync();
+        } finally {
+          await backupHandle.close();
+        }
+        await rename(backupTemporaryPath, this.#backupPath);
+      }
+
+      // Same-directory rename keeps the replacement on the same volume.
+      // Node uses the platform's rename primitive; Windows behavior is covered by CI.
+      await rename(temporaryPath, this.#filePath);
+
+      const saved = await this.#readValidated(this.#filePath);
+      const savedRevision = this.#revision(serializePolicyDocument(saved));
+      if (savedRevision !== nextRevision) {
+        throw new Error("Saved policy verification failed: revision mismatch.");
+      }
+
+      return {
+        document: saved,
+        revision: savedRevision,
+        previousRevision: currentRevision,
+        recoveredFromBackup: false
+      };
+    } catch (error) {
+      // If replacement failed after the active file was moved, restore the last backup.
+      // The normal rename path does not remove the active file before replacement.
+      throw error;
+    } finally {
+      if (handle) await handle.close().catch(() => undefined);
+      await rm(temporaryPath, { force: true }).catch(() => undefined);
+      await rm(backupTemporaryPath, { force: true }).catch(() => undefined);
+    }
+  }
+
+  async #validateWorkspaceRoots(input: unknown): Promise<PolicyDocument> {
+    const parsed = parsePolicyDocument(input).document;
+    const seen = new Set<string>();
+    const roots = [];
+
+    for (const root of parsed.roots) {
+      if (!path.isAbsolute(root.path)) {
+        throw new Error("Every workspace root must be an absolute path.");
+      }
+
+      const canonicalPath = await realpath(root.path);
+      const details = await stat(canonicalPath);
+      if (!details.isDirectory()) {
+        throw new Error(`Workspace root is not a directory: ${root.path}`);
+      }
+
+      const identity = process.platform === "win32"
+        ? canonicalPath.toLocaleLowerCase("en-US")
+        : canonicalPath;
+      if (seen.has(identity)) {
+        throw new Error(`Duplicate canonical workspace root: ${canonicalPath}`);
+      }
+      seen.add(identity);
+      roots.push({ path: canonicalPath, permissions: root.permissions });
+    }
+
+    return parsePolicyDocument({
+      schemaVersion: parsed.schemaVersion,
+      roots,
+      limits: parsed.limits
+    }).document;
+  }
+
+  async #readValidated(filePath: string): Promise<PolicyDocument> {
+    const raw = await readFile(filePath, "utf8");
+    const parsed: unknown = JSON.parse(raw);
+    return parsePolicyDocument(parsed).document;
+  }
+
+  #snapshot(document: PolicyDocument, recoveredFromBackup: boolean): PolicySnapshot {
+    return {
+      document,
+      revision: this.#revision(serializePolicyDocument(document)),
+      recoveredFromBackup
+    };
+  }
+
+  #revision(serialized: string): string {
+    return createHash("sha256").update(serialized, "utf8").digest("hex");
+  }
+
+  #isMissingFile(error: unknown): boolean {
+    return typeof error === "object" && error !== null &&
+      "code" in error && error.code === "ENOENT";
+  }
+}

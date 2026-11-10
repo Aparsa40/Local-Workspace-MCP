@@ -81,7 +81,7 @@ export class ElectronMainRuntime {
     this.#register(IPC_CHANNELS.policySave, savePolicyPayloadSchema, (payload) =>
       this.#service.savePolicy(payload.proposal, payload.expectedRevision));
     this.#register(IPC_CHANNELS.coreStart, emptyPayloadSchema, () => this.#service.startCore());
-    this.#register(IPC_CHANNELS.coreStop, emptyPayloadSchema, () => this.#service.stopCore());
+    this.#register(IPC_CHANNELS.coreStop, emptyPayloadSchema, () => this.#service.stopCore());\n    this.#register(IPC_CHANNELS.workspacePickDirectory, emptyPayloadSchema, () => options.selectDirectory());
   }
 
   async dispose(): Promise<void> {

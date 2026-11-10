@@ -85,6 +85,16 @@ test("reports an unconfigured policy without inventing an active revision", asyn
   assert.equal(status.core.activeRevision, undefined);
 });
 
+test("does not report a broken configured workspace as an unconfigured policy", async (t) => {
+  const { service, workspace } = await setup(t);
+  await service.savePolicy(proposal(workspace), "");
+  await rm(workspace, { recursive: true, force: true });
+
+  await assert.rejects(service.getPolicy(), (error: unknown) =>
+    typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT"
+  );
+});
+
 test("starts Core only when its normalized runtime revision matches the saved policy", async (t) => {
   const { service, manager, workspace } = await setup(t);
   const saved = await service.savePolicy(proposal(workspace), "");

@@ -8,6 +8,46 @@ let mainWindow;
 let runtime;
 let quitting = false;
 
+function finishSmoke(exitCode) {
+  const activeRuntime = runtime;
+  runtime = undefined;
+  void Promise.resolve(activeRuntime?.dispose())
+    .catch((error) => {
+      process.stderr.write(`Electron smoke cleanup failed: ${error instanceof Error ? error.message : "unknown error"}\\n`);
+    })
+    .finally(() => app.exit(exitCode));
+}
+
+function verifySmokeWindow(window) {
+  window.webContents.once("did-fail-load", (_event, errorCode, description) => {
+    process.stderr.write(`Electron smoke renderer load failed (${errorCode}): ${description}\\n`);
+    finishSmoke(1);
+  });
+
+  window.webContents.once("did-finish-load", () => {
+    const verification = `Promise.all([
+      window.localWorkspace.app.getStatus(),
+      window.localWorkspace.policy.get()
+    ]).then(([appStatus, policy]) => ({
+      rendererMounted: Boolean(document.querySelector("#root")?.childElementCount),
+      appStatus,
+      policy
+    }))`;
+
+    void window.webContents.executeJavaScript(verification).then((result) => {
+      if (!result.rendererMounted || !result.appStatus?.ok ||
+          !result.policy?.ok || result.policy.value.configured !== false) {
+        throw new Error("Renderer, preload bridge, or initial unconfigured policy check failed.");
+      }
+      process.stdout.write("Electron Windows smoke test passed: React renderer, preload IPC, and backend status are live.\\n");
+      finishSmoke(0);
+    }).catch((error) => {
+      process.stderr.write(`Electron smoke verification failed: ${error instanceof Error ? error.message : "unknown error"}\\n`);
+      finishSmoke(1);
+    });
+  });
+}
+
 function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -60,7 +100,10 @@ app.whenReady().then(() => {
       event.senderFrame === mainWindow.webContents.mainFrame
     )
   });
-  createMainWindow();
+  const window = createMainWindow();
+  if (process.env.LWMCP_ELECTRON_SMOKE === "1") {
+    verifySmokeWindow(window);
+  }
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow();

@@ -45,7 +45,7 @@ Already implemented in the repository:
 - Versioned PolicyStore with validation, revision checks, backup/recovery, and failure-injection coverage.
 - Seven-screen React prototype (still demo-only).
 
-Implemented in the current M1 branch (pending PR review and final CI):
+Merged to main in PR #25:
 - Electron app shell and main-process lifecycle foundation.
 - Hardened preload bridge using `contextBridge`; renderer has no Node access or generic IPC forwarding.
 - Strict, Zod-validated, allowlisted IPC handlers with invoking main-frame validation.
@@ -53,10 +53,18 @@ Implemented in the current M1 branch (pending PR review and final CI):
 - Separate persisted-policy and normalized Core-runtime revision handling; a policy is reported active only when Core confirms the derived runtime revision.
 - Persisted-but-not-applied policy handling; reload failure triggers a managed-Core stop attempt and remains reported as unapplied.
 
+Implemented in the current M1 branch (pending review and CI):
+- Bundled the approved React design into the Electron renderer.
+- Connected workspace selection to the native folder picker and PolicyStore.
+- Connected permission editing, policy save, and managed Core reload feedback.
+- Replaced demo dashboard values and tool toggles with actual Core/policy state.
+- Added actual stdio connection configuration generation from runtime paths.
+- Made an empty workspace list a valid default-deny policy.
+
 Still required to complete M1:
 - Full Windows GUI launch and end-to-end reload/failure/shutdown verification.
-- Connect the approved seven-screen React UI to the real backend operations.
-- Complete IPC threat review and Windows packaging/build smoke tests.
+- Complete Activity & Audit through the structured persistent audit pipeline, plus remaining Settings behavior.
+- Complete IPC threat review and Windows desktop smoke tests.
 
 The merged Node-only CoreProcessManager was a prerequisite; this branch adds the first Electron integration but does not complete M1.
 

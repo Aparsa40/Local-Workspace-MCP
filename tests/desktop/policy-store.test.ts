@@ -179,3 +179,13 @@ test("keeps the active policy intact when replacement fails and can retry safely
   assert.notEqual(second.revision, first.revision);
   assert.equal((await resilientStore.load()).revision, second.revision);
 });
+
+test("persists an empty default-deny policy after the last workspace is removed", async (t) => {
+  const f = await fixture();
+  t.after(() => rm(f.directory, { recursive: true, force: true }));
+
+  const saved = await f.store.save({ schemaVersion: 1, roots: [], limits: {} }, "");
+  const loaded = await f.store.load();
+  assert.equal(loaded.revision, saved.revision);
+  assert.deepEqual(loaded.document.roots, []);
+});

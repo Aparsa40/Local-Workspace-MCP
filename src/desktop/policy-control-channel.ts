@@ -7,15 +7,23 @@ import type { PolicyRuntime } from "../security/policy-runtime.js";
 
 const MAX_CONTROL_MESSAGE_BYTES = 64 * 1024;
 
-const controlRequestSchema = z.object({
-  protocolVersion: z.literal(1),
-  requestId: z.string().uuid(),
-  method: z.literal("policy.reload"),
-  params: z.object({
-    expectedRevision: z.string().regex(/^[a-f0-9]{64}$/),
-    config: appConfigSchema
+const controlRequestSchema = z.discriminatedUnion("method", [
+  z.object({
+    protocolVersion: z.literal(1),
+    requestId: z.string().uuid(),
+    method: z.literal("policy.getRevision"),
+    params: z.object({}).strict()
+  }).strict(),
+  z.object({
+    protocolVersion: z.literal(1),
+    requestId: z.string().uuid(),
+    method: z.literal("policy.reload"),
+    params: z.object({
+      expectedRevision: z.string().regex(/^[a-f0-9]{64}$/),
+      config: appConfigSchema
+    }).strict()
   }).strict()
-}).strict();
+]);
 
 type ControlRequest = z.infer<typeof controlRequestSchema>;
 
@@ -132,6 +140,16 @@ async function applyRequest(
   runtime: PolicyRuntime,
   output: Writable
 ): Promise<void> {
+  if (request.method === "policy.getRevision") {
+    await writeResponse(output, {
+      protocolVersion: 1,
+      requestId: request.requestId,
+      ok: true,
+      result: { revision: runtime.getSnapshot().revision }
+    });
+    return;
+  }
+
   try {
     const snapshot = await runtime.reload(request.params.config, request.params.expectedRevision);
     await writeResponse(output, {

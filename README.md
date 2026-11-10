@@ -14,6 +14,7 @@ The product plan is documented here:
 - [UI/UX Specification](docs/UI_UX_SPEC.md) — navigation, screen behavior, workflows, and required UI states.
 - [Implementation Roadmap](docs/IMPLEMENTATION_ROADMAP.md) — current baseline, delivery phases, and acceptance gates.
 - [Architecture Decision Records](docs/ARCHITECTURE_DECISIONS.md) — durable decisions and open technical validations.
+- [Desktop UI Prototype](desktop-prototype/README.md) — run instructions and prototype limitations.
 - [Core Architecture](architecture.md) — logical server components and security design.
 - [Security Policy](SECURITY.md) — vulnerability reporting and security requirements.
 

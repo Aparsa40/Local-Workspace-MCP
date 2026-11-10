@@ -58,11 +58,14 @@ Acceptance:
 
 ## Phase 1 — UI prototype and design validation
 
-**Status: Planned.**
+**Status: In progress.**
+
+Initial implementation started in [`desktop-prototype/`](../desktop-prototype/). It is an interactive React + TypeScript prototype with local-only demo state; it does not connect to the MCP Core or access Windows files. The seven agreed navigation areas are represented. Visual review, interaction refinement, accessibility checks, and a dedicated build check remain open.
 
 Work:
-- Build the desktop application shell and navigation.
-- Prototype all seven screens.
+- [x] Build the desktop application shell and navigation.
+- [x] Prototype all seven screens in an interactive, demo-only React app.
+- [ ] Review the prototype visually and refine it with product-owner feedback.
 - Validate the major workflows and states in the UI/UX specification.
 - Confirm desktop runtime choice (Electron is the leading candidate).
 - Validate accessibility, keyboard use, responsive desktop layouts, and error handling.

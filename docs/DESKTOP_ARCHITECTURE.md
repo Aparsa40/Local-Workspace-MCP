@@ -194,6 +194,14 @@ Core now has an immutable in-process policy snapshot and an explicit revision-ch
 
 A UI must never label a policy revision as active until the Core behavior that enforces that revision is verified.
 
+### Dedicated app-managed control channel (ADR-009)
+
+The Core now provides a separately testable, bounded management protocol in src/desktop/policy-control-channel.ts. It is designed for two private OS pipes inherited only by an Electron-main-launched Core child: child descriptor 3 carries requests into Core and descriptor 4 carries responses back to the parent. MCP JSON-RPC remains on the child's stdin/stdout and is never multiplexed with management traffic.
+
+Protocol version 1 currently supports only policy.reload. Each newline-delimited JSON frame must be at most 64 KiB and contain a UUID request ID, the current expected SHA-256 revision, and the complete proposed Core config. Core validates the request and config, then delegates to PolicyRuntime.reload; stale revisions and invalid policies return stable error codes. Raw errors and stack traces are not returned.
+
+This is the Core-side protocol primitive, not a completed desktop integration: the Electron main process does not yet create these pipes or attach them to managed Core children, and the Core entrypoint does not yet activate the handler. Direct client-owned stdio processes remain unchanged and do not need a management channel. Until the end-to-end process integration and Windows lifecycle tests are complete, policy file saves must not be described as immediately revoking permissions in existing sessions.
+
 ## 8. Core process lifecycle
 
 The Core has two supported lifecycle modes:
